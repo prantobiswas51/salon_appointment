@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('client_id')->constrained()->onDelete('cascade');
-            $table->string('service');
+            $table->enum('service', ['Hair Cut', 'Beard Shaping', 'Other Services']);
             $table->timestamp('appointment_time');
             $table->integer('duration')->default(60); // in minutes
             $table->enum('attendance_status', ['attended', 'canceled', 'no_show'])->nullable();

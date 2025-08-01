@@ -13,7 +13,6 @@ type RegisterForm = {
     name: string;
     email: string;
     number: string;
-    dob: string;
     password: string;
     password_confirmation: string;
 };
@@ -23,7 +22,6 @@ export default function Register() {
         name: '',
         email: '',
         number: '',
-        dob: '',
         password: '',
         password_confirmation: '',
     });
@@ -85,23 +83,6 @@ export default function Register() {
                             onChange={(e) => setData('number', e.target.value)}
                             disabled={processing}
                             placeholder="+123 4567 890"
-                        />
-                        <InputError message={errors.number} />
-                    </div>
-
-                    
-                    <div className="grid gap-2">
-                        <Label htmlFor="dob">Date of Birth</Label>
-                        <Input
-                            id="dob"
-                            type="date"
-                            required
-                            tabIndex={2}
-                            autoComplete="dob"
-                            value={data.dob}
-                            onChange={(e) => setData('dob', e.target.value)}
-                            disabled={processing}
-                            placeholder="YYYY-MM-DD"
                         />
                         <InputError message={errors.number} />
                     </div>
