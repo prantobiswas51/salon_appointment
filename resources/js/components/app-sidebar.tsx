@@ -4,24 +4,31 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, AppWindowMac  } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, AppWindowMac } from 'lucide-react';
 import AppLogo from './app-logo';
 
+interface NavMainProps {
+    items: NavItem[];
+}
+
 const mainNavItems: NavItem[] = [
+
+    
+
     {
         title: 'Dashboard',
         href: '/dashboard',
         icon: LayoutGrid,
     },
     {
-        title: 'Booking',
-        href: '/booking',
-        icon: AppWindowMac ,
+        title: 'Appointment',
+        href: '/appointment',
+        icon: AppWindowMac,
     },
 ];
 
 const footerNavItems: NavItem[] = [
-    
+
 ];
 
 export function AppSidebar() {
@@ -40,6 +47,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
+                <div className="p-2 bg-amber-500 rounded-md text-center"><Link href={'/appointment/create'}>+ New appointment</Link></div>
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
