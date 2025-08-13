@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\ClientController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,9 +21,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    Route::get('/appointment', [AppointmentController::class, 'index'])->name('appointment.index');
+    Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointment.index');
     Route::get('/appointment/create', [AppointmentController::class, 'create'])->name('appointment.create');
     Route::post('/appointment/store', [AppointmentController::class, 'store'])->name('appointment.store');
+    Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointment.update');
+
+    Route::get('/clients', [ClientController::class, 'index'])->name('client.index');
+    Route::get('/client/create', [ClientController::class, 'create'])->name('client.create');
+    Route::put('/client/{client}', [ClientController::class, 'update'])->name('client.update');    
 
 });
 

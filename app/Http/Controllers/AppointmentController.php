@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Inertia\Inertia;
 use App\Models\Client;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 use function Pest\Laravel\json;
+use Illuminate\Support\Facades\Validator;
 use function PHPUnit\Framework\returnSelf;
 
 class AppointmentController extends Controller
@@ -79,5 +80,30 @@ class AppointmentController extends Controller
         } catch (\Throwable $th) {
             return redirect()->back()->with('error', 'Something went wrong: ' . $th->getMessage());
         }
+    }
+
+    public function update(Request $request, Appointment $appointment)
+    {
+        // validate incoming data (tweak as needed)
+        $validated = $request->validate([
+            'client_id'          => ['required', 'integer', 'exists:clients,id'],
+            'service'            => ['required', 'string', 'max:255'],
+            'duration'           => ['nullable', 'string', 'max:50'],
+            'attendence_status'  => ['nullable', 'string', 'max:50'],
+            'appointment_time'   => ['required', 'date'],
+            'status'             => ['required', 'string', 'max:50'],
+            'notes'              => ['nullable', 'string'],
+        ]);
+
+        // If your frontend sends "datetime-local" (e.g., "2025-08-12T15:30"),
+        // Laravel will usually parse it; but to be explicit:
+        if (!empty($validated['appointment_time'])) {
+            $validated['appointment_time'] = Carbon::parse($validated['appointment_time']);
+        }
+
+        $appointment->update($validated);
+
+        // Inertia-friendly redirect with flash
+        return back()->with('success', 'Appointment updated successfully.');
     }
 }

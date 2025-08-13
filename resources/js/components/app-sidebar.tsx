@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, AppWindowMac } from 'lucide-react';
+import { BookOpen, Users, LayoutGrid, AppWindowMac } from 'lucide-react';
 import AppLogo from './app-logo';
 
 interface NavMainProps {
@@ -13,17 +13,20 @@ interface NavMainProps {
 
 const mainNavItems: NavItem[] = [
 
-    
-
     {
         title: 'Dashboard',
         href: '/dashboard',
         icon: LayoutGrid,
     },
     {
-        title: 'Appointment',
-        href: '/appointment',
+        title: 'Appointments',
+        href: '/appointments',
         icon: AppWindowMac,
+    },
+    {
+        title: 'Clients',
+        href: '/clients',
+        icon: Users,
     },
 ];
 
