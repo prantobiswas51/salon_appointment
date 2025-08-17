@@ -1,9 +1,12 @@
 <?php
 
-use App\Http\Controllers\AppointmentController;
-use App\Http\Controllers\ClientController;
-use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\WhatsappController;
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\ReminderController;
+use App\Http\Controllers\WhatsappWebhookController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -28,9 +31,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/clients', [ClientController::class, 'index'])->name('client.index');
     Route::get('/client/create', [ClientController::class, 'create'])->name('client.create');
-    Route::put('/client/{client}', [ClientController::class, 'update'])->name('client.update');    
+    Route::put('/client/{client}', [ClientController::class, 'update'])->name('client.update');   
+    
+    Route::get('/reminders', [ReminderController::class, 'index'])->name('reminders.index');
 
 });
+
+Route::get('/webhooks/whatsapp',  [WhatsappWebhookController::class, 'verify']); // verification
+Route::post('/webhooks/whatsapp', [WhatsappWebhookController::class, 'handle']); 
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
