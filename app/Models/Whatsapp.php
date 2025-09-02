@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Reminder extends Model
+class Whatsapp extends Model
 {
     protected $fillable = [
-        'client_id',
-        'appointment_id',
-        'message_sent_at',
+        'token',
+        'number',
+        'number_id',
     ];
 }

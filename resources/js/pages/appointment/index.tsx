@@ -24,6 +24,7 @@ type Appointment = {
   appointment_time: string;
   status: string;
   notes: string;
+  reminder_sent: string;
   client: Client;
 };
 
@@ -36,22 +37,45 @@ export default function Index() {
   const { appointments } = usePage<{ appointments: Paginated<Appointment> }>().props;
 
   // edit modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const openEdit = (appt: Appointment) => {
+  const openEdit = (appt: Appointment): void => {
     // shallow copy so we can edit fields
     setEditing({ ...appt });
     setIsModalOpen(true);
   };
 
-  const closeEdit = () => {
+  const closeEdit = (): void => {
     setIsModalOpen(false);
     setEditing(null);
   };
 
-  const handleUpdate = (e: React.FormEvent) => {
+  // ✅ Use Inertia for deletion and refresh only the `appointments` prop
+  const deleteAppointment = (id: number): void => {
+    if (!window.confirm('Are you sure you want to delete this appointment?')) return;
+
+    setDeletingId(id);
+
+    // If you have Ziggy: route('appointments.destroy', id)
+    router.delete(`/appointment/delete/${id}`, {
+      preserveScroll: true,
+      onFinish: () => setDeletingId(null),
+      onError: (errors) => {
+        // eslint-disable-next-line no-console
+        console.error(errors);
+        window.alert('Failed to delete appointment.');
+      },
+      onSuccess: () => {
+        // Reload just the appointments prop (works across Inertia versions)
+        router.visit(window.location.href, { only: ['appointments'], preserveScroll: true });
+      },
+    });
+  };
+
+  const handleUpdate = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (!editing) return;
 
@@ -78,7 +102,7 @@ export default function Index() {
         onFinish: () => setSubmitting(false),
         onSuccess: closeEdit,
         onError: (errors) => {
-          // surface or log validation errors if needed
+          // eslint-disable-next-line no-console
           console.error(errors);
         },
       }
@@ -115,6 +139,7 @@ export default function Index() {
               <th className="px-6 py-3 border-b">Service</th>
               <th className="px-6 py-3 border-b">Time</th>
               <th className="px-6 py-3 border-b">Status</th>
+              <th className="px-6 py-3 border-b">Reminder sent at</th>
               <th className="px-6 py-3 border-b">Actions</th>
             </tr>
           </thead>
@@ -127,12 +152,22 @@ export default function Index() {
                 <td className="px-6 py-4 border-b">{appointment.service}</td>
                 <td className="px-6 py-4 border-b">{appointment.appointment_time}</td>
                 <td className="px-6 py-4 border-b">{appointment.status}</td>
-                <td className="px-6 py-4 border-b flex hover:cursor-pointer items-center">
+                <td className="px-6 py-4 border-b">{appointment.reminder_sent}</td>
+                <td className="px-6 py-4 border-b flex items-center">
                   <FilePen
-                    className="text-amber-500 hover:text-amber-600"
+                    className="text-amber-500 hover:text-amber-600 hover:cursor-pointer"
                     onClick={() => openEdit(appointment)}
                   />
-                  <Trash className="text-red-500 hover:text-red-600 ml-3" />
+                  <button
+                    type="button"
+                    aria-label="Delete appointment"
+                    className={`ml-3 ${deletingId === appointment.id ? 'opacity-50 cursor-not-allowed' : 'hover:cursor-pointer'}`}
+                    onClick={() => deleteAppointment(appointment.id)}
+                    disabled={deletingId === appointment.id}
+                    title={deletingId === appointment.id ? 'Deleting…' : 'Delete'}
+                  >
+                    <Trash className="text-red-500 hover:text-red-600" />
+                  </button>
                 </td>
               </tr>
             ))}
@@ -145,11 +180,12 @@ export default function Index() {
             <button
               key={index}
               disabled={!link.url}
+              // Note: label may contain HTML entities from Laravel pagination
               dangerouslySetInnerHTML={{ __html: link.label }}
               onClick={() => link.url && router.visit(link.url)}
-              className={`px-3 py-1 border rounded hover:cursor-pointer
+              className={`px-3 py-1 border rounded
                 ${link.active ? 'bg-pink-600 text-white' : 'bg-white text-pink-600'}
-                ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
+                ${!link.url ? 'opacity-50 cursor-not-allowed' : 'hover:cursor-pointer'}`}
             />
           ))}
         </div>
@@ -182,14 +218,17 @@ export default function Index() {
 
                 <div className="mb-4">
                   <label className="block mb-2">Attendance Status</label>
-                  <input
-                    type="text"
+                  <select
                     className="border p-2 rounded-md w-full"
                     value={editing.attendence_status}
                     onChange={(e) =>
                       setEditing({ ...editing, attendence_status: e.target.value })
                     }
-                  />
+                  >
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Canceled">Canceled</option>
+                    <option value="Scheduled">Scheduled</option>
+                    </select>
                 </div>
 
                 <div className="mb-4">

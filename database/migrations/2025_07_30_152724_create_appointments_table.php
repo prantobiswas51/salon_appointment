@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('duration')->default(60); // in minutes
             $table->enum('attendance_status', ['attended', 'canceled', 'no_show'])->nullable();
             $table->enum('status', ['Scheduled', 'Confirmed', 'Canceled'])->default('Scheduled');
-            $table->boolean('reminder_sent')->default(false); // optional for reminder tracking
+            $table->timestamp('reminder_sent')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });

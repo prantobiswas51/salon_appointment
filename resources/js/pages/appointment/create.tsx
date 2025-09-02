@@ -3,6 +3,7 @@ import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { usePage } from '@inertiajs/react';
+import WeekCalendar from "@/components/WeekCalendar";
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -236,8 +237,13 @@ export default function CreateAppointment() {
                     </div>
                 </div>
 
-                <div className="p-2 bg-amber-700 w-full">
-                    show calender here
+                <div className="p-2 w-full h-screen">
+                    <WeekCalendar
+                        value={data.appointment_time}
+                        onChange={(val) => setData("appointment_time", val)}
+                        weekStartsOn={0} // 0=Sunday, 1=Monday
+                        slotMinutes={30}
+                    />
                 </div>
 
             </div>

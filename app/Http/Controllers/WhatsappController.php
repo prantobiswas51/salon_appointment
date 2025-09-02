@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Reminder;
 use Carbon\Carbon;
+use Inertia\Inertia;
+use App\Models\Reminder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -53,11 +54,13 @@ class WhatsappController extends Controller
             ], $resp->status());
         }
 
-        $reminder = new Reminder();
-        $reminder->appointment_id = '1';
-        $reminder->message_sent_at = Carbon::now();
-        $reminder->save();
+        // add time to $appointment->message_sent_at
+        
 
         return response()->json($resp->json());
+    }
+
+    public function index(){
+        return Inertia::render('whatsapp/index');
     }
 }

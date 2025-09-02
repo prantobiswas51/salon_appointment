@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Inertia\Inertia;
 use App\Models\Client;
 use App\Models\Appointment;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 use function Pest\Laravel\json;
@@ -105,5 +106,17 @@ class AppointmentController extends Controller
 
         // Inertia-friendly redirect with flash
         return back()->with('success', 'Appointment updated successfully.');
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $appointment = Appointment::findOrFail($id);
+
+        $appointment->delete();
+
+        // If you’re using Inertia + Ziggy:
+        return redirect()
+            ->route('appointment.index')
+            ->with('success', 'Appointment deleted successfully.');
     }
 }
