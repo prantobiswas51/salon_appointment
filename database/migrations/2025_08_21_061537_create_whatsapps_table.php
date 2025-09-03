@@ -15,6 +15,8 @@ return new class extends Migration
             $table->string('number_id');
             $table->timestamps();
         });
+
+        
     }
 
     public function down(): void
