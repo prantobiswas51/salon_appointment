@@ -18,6 +18,8 @@ Route::get('/admin/{any?}', function () {
     return file_get_contents(public_path('admin/index.html'));
 })->where('any', '.*');
 
+Route::get('/privacy_policy', [PageController::class, 'privacy_policy'])->name('privacy_policy');
+Route::get('/terms_condition', [PageController::class, 'terms_condition'])->name('terms_condition');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -37,13 +39,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/whatsapp/api', [WhatsappController::class, 'index'])->name('whatsapp.index');
     Route::get('/whatsapp/send', [WhatsappController::class, 'send']);
 
-    Route::get('/whatsapp/api_callback',  [WhatsappWebhookController::class, 'verify']);
-    Route::post('/webhooks/whatsapp', [WhatsappWebhookController::class, 'handle']);
+    Route::get('/webhook/whatsapp',  [WhatsappWebhookController::class, 'verify']);  // GET verify
+    Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle']);
 });
 
 
-Route::get('/privacy_policy', [PageController::class, 'privacy_policy'])->name('privacy_policy');
-Route::get('/terms_condition', [PageController::class, 'terms_condition'])->name('terms_condition');
+
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
