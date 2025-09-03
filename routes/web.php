@@ -7,6 +7,7 @@ use App\Http\Controllers\WhatsappController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\WhatsappWebhookController;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Csrf;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -40,7 +41,7 @@ Route::put('/whatsapp/api', [WhatsappController::class, 'index'])->name('whatsap
 Route::get('/whatsapp/send', [WhatsappController::class, 'send']);
 
 Route::get('/webhook/whatsapp',  [WhatsappWebhookController::class, 'verify']);  // GET verify
-Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle']);
+Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])->withoutMiddleware([Csrf::class]);;
 
 
 
