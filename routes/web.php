@@ -35,14 +35,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/clients', [ClientController::class, 'index'])->name('client.index');
     Route::get('/client/create', [ClientController::class, 'create'])->name('client.create');
     Route::put('/client/{client}', [ClientController::class, 'update'])->name('client.update');
-
-    Route::put('/whatsapp/api', [WhatsappController::class, 'index'])->name('whatsapp.index');
-    Route::get('/whatsapp/send', [WhatsappController::class, 'send']);
-
-    Route::get('/webhook/whatsapp',  [WhatsappWebhookController::class, 'verify']);  // GET verify
-    Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle']);
 });
 
+Route::put('/whatsapp/api', [WhatsappController::class, 'index'])->name('whatsapp.index');
+Route::get('/whatsapp/send', [WhatsappController::class, 'send']);
+
+Route::get('/webhook/whatsapp',  [WhatsappWebhookController::class, 'verify']);  // GET verify
+Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle']);
 
 
 
