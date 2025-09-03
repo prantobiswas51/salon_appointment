@@ -6,7 +6,6 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\WhatsappController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\PageController;
-use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\WhatsappWebhookController;
 
 Route::get('/', function () {

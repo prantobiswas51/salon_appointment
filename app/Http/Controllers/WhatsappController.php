@@ -16,7 +16,7 @@ class WhatsappController extends Controller
 
         $phoneNumberId = '821517547705035';
 
-        $url = "https://graph.facebook.com/v22.0/{$phoneNumberId}/messages";
+        $url = "https://graph.facebook.com/v23.0/{$phoneNumberId}/messages";
 
         // If you want to send plain text (only works inside the 24h session window)
 

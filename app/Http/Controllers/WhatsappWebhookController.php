@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class WhatsappWebhookController extends Controller
 {
@@ -37,33 +39,39 @@ class WhatsappWebhookController extends Controller
         $data = $request->all();
         Log::info('WhatsApp Webhook (POST):', $data);
 
-        // Safely read messages (may be absent for status-only updates)
-        $messages = data_get($data, 'entry.0.changes.0.value.messages', []);
+        $value = data_get($data, 'entry.0.changes.0.value', []);
 
-        foreach ($messages as $msg) {
-            $from      = $msg['from'] ?? null;            // sender wa_id
-            $type      = $msg['type'] ?? null;            // text, image, etc.
-            $timestamp = $msg['timestamp'] ?? null;
+        // Incoming messages (if any)
+        $messages = $value['messages'] ?? [];
+        if (!empty($messages)) {
+            $msg       = $messages[0]; // just take the first for a quick check
+            $type      = $msg['type'] ?? 'unknown';
+            $from      = $msg['from'] ?? null;
+            $waId      = $msg['id'] ?? null;
+            $timestamp = isset($msg['timestamp']) ? (int)$msg['timestamp'] : null;
 
+            $body = null;
             if ($type === 'text') {
-                $text = data_get($msg, 'text.body');
-                Log::info("Incoming text from {$from}: {$text}", ['timestamp' => $timestamp]);
-
-                // TODO: store in DB, dispatch job, or trigger an auto-reply.
+                $body = data_get($msg, 'text.body');
+            } elseif ($type === 'interactive') {
+                $body = data_get($msg, 'interactive.button_reply.title')
+                    ?? data_get($msg, 'interactive.list_reply.title');
             }
 
-            // You can add handlers for other types:
-            // if ($type === 'image') { ... }
-            // if ($type === 'interactive') { ... }
+            // Save a compact snapshot to storage/app/wa-last.json
+            $snapshot = [
+                'wa_message_id' => $waId,
+                'from_wa_id'    => $from,
+                'type'          => $type,
+                'body'          => $body,
+                'timestamp'     => $timestamp,
+                'sent_at_iso'   => $timestamp ? Carbon::createFromTimestamp($timestamp)->toIso8601String() : null,
+            ];
+
+            Storage::put('wa-last.json', json_encode($snapshot, JSON_PRETTY_PRINT));
+            Log::info('Saved last WA message snapshot', $snapshot);
         }
 
-        // (Optional) read status updates (sent/delivered/read)
-        $statuses = data_get($data, 'entry.0.changes.0.value.statuses', []);
-        foreach ($statuses as $st) {
-            Log::info('Message status', $st);
-            // e.g., track delivery/read states using $st['id'], $st['status'], $st['timestamp']
-        }
-
-        return response()->json(['status' => 'ok'], 200);
+        return response()->json(['status' => 'ok']);
     }
 }
