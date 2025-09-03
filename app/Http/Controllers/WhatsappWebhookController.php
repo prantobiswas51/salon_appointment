@@ -68,7 +68,6 @@ class WhatsappWebhookController extends Controller
                 'sent_at_iso'   => $timestamp ? Carbon::createFromTimestamp($timestamp)->toIso8601String() : null,
             ];
 
-            Storage::put('wa-last.json', json_encode($snapshot, JSON_PRETTY_PRINT));
             Log::info('Saved last WA message snapshot', $snapshot);
         }
 
