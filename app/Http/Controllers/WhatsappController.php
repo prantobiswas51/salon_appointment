@@ -6,44 +6,43 @@ use Carbon\Carbon;
 use Inertia\Inertia;
 use App\Models\Reminder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 class WhatsappController extends Controller
 {
-    public function send(Request $request)
+    public function send()
     {
-        $validated = $request->validate([
-            'to'   => 'required|string',
-            'body' => 'required|string|max:4096', // plain text
-        ]);
 
-        $phoneNumberId = '7514386280565757967';
+        $phoneNumberId = '821517547705035';
 
         $url = "https://graph.facebook.com/v22.0/{$phoneNumberId}/messages";
 
         // If you want to send plain text (only works inside the 24h session window)
-        // $payload = [
-        //     'messaging_product' => 'whatsapp',
-        //     'to'   => $validated['to'],
-        //     'type' => 'text',
-        //     'text' => [
-        //         'body' => $validated['body'],
-        //     ],
-        // ];
-
-        // If you need to send a template (outside the 24h window), uncomment below:
 
         $payload = [
             'messaging_product' => 'whatsapp',
-            'to'   => $validated['to'],
-            'type' => 'template',
-            'template' => [
-                'name' => 'hello_world',
-                'language' => ['code' => 'en_US'],
+            'to'   => '+8801823744169',
+            'type' => 'text',
+            'text' => [
+                'body' => 'Hi , this is custom text',
             ],
         ];
 
-        $resp = Http::withToken('EAAKbuv0cwRcBPMzbKhohriugheriger40q3BPV8dMKaZBRaogOigdZAN8eRZC750RboGFI13KOhHgLRvlbW47eTCnmSj9zDNAPTz3C55f5XeAIwKrU326O8hwZAFUmznqBoWIRZCguI3JmAjZBIZCcN9ezm9blW6EOdZCUTJjMWTxrPHvz0giZBK2fl8kwZBpR4LkNDt6fdr4z4vUEZBVQR1PIvCLZChCQZDZD')
+
+        // If you need to send a template (outside the 24h window), uncomment below:
+
+        // $payload = [
+        //     'messaging_product' => 'whatsapp',
+        //     'to'   => '01402036221',
+        //     'type' => 'template',
+        //     'template' => [
+        //         'name' => 'hello_world',
+        //         'language' => ['code' => 'en_US'],
+        //     ],
+        // ];
+
+        $resp = Http::withToken('EAAYRK1176M0BPbO7ueHvSA3DuR520L1aQydl1Pyx2iKbDiDzYGY2kpyEqhZAB3sT784EeUSCpXRxZCrbFhu6emxUeHQFWic3bcsgjBhPjUZBPOdfBoGIqkTslQsi2QJBG1SHIBbJNLDXZC64KqSuPlzAXqfieuN7CobVmkBzsu8doIpLhtRvyBEZB77S6dA8CH7BOZC5pDqGt0xHGX')
             ->acceptJson()
             ->post($url, $payload);
 
@@ -54,13 +53,12 @@ class WhatsappController extends Controller
             ], $resp->status());
         }
 
-        // add time to $appointment->message_sent_at
-        
 
         return response()->json($resp->json());
     }
 
-    public function index(){
+    public function index()
+    {
         return Inertia::render('whatsapp/index');
     }
 }
