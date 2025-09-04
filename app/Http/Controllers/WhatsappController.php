@@ -25,7 +25,7 @@ class WhatsappController extends Controller
             'to'   => '+8801823744169',
             'type' => 'text',
             'text' => [
-                'body' => 'Hi , this is custom text',
+                'body' => 'Hi , this a test to send',
             ],
         ];
 

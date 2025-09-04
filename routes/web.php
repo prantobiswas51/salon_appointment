@@ -21,6 +21,13 @@ Route::get('/admin/{any?}', function () {
 Route::get('/privacy_policy', [PageController::class, 'privacy_policy'])->name('privacy_policy');
 Route::get('/terms_condition', [PageController::class, 'terms_condition'])->name('terms_condition');
 
+Route::put('/whatsapp/api', [WhatsappController::class, 'index'])->name('whatsapp.index');
+Route::get('/whatsapp/send', [WhatsappController::class, 'send']);
+
+Route::get('/webhook/whatsapp',  [WhatsappWebhookController::class, 'verify']);  // GET verify
+Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])->withoutMiddleware([Csrf::class]);;
+
+
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('dashboard', function () {
@@ -29,6 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointment.index');
     Route::get('/appointment/create', [AppointmentController::class, 'create'])->name('appointment.create');
+    Route::post('/appointment/store', [AppointmentController::class, 'store'])->name('appointment.store');
     Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointment.update');
     Route::delete('/appointment/delete/{appointment}', [AppointmentController::class, 'destroy'])->name('appointment.delete');
 
@@ -37,11 +45,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/client/{client}', [ClientController::class, 'update'])->name('client.update');
 });
 
-Route::put('/whatsapp/api', [WhatsappController::class, 'index'])->name('whatsapp.index');
-Route::get('/whatsapp/send', [WhatsappController::class, 'send']);
-
-Route::get('/webhook/whatsapp',  [WhatsappWebhookController::class, 'verify']);  // GET verify
-Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])->withoutMiddleware([Csrf::class]);;
 
 
 
