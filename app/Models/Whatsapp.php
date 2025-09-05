@@ -8,7 +8,6 @@ class Whatsapp extends Model
 {
     protected $fillable = [
         'token',
-        'number',
         'number_id',
     ];
 }

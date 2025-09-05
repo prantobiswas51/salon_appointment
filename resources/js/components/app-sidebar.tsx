@@ -30,7 +30,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Whatsapp API',
-        href: '/whatsappapi',
+        href: '/whatsapp',
         icon: FileCode2,
     },
 ];

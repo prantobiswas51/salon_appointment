@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Carbon\Carbon;
 use App\Models\Appointment;
+use App\Models\Whatsapp;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -73,15 +74,17 @@ class SendWhatsAppMessage extends Command
 
     private function sendWhatsApp(string $to, string $message): bool
     {
-        $token         = 'EAAYRK1176M0BPbO7ueHvSA3DuR520L1aQydl1Pyx2iKbDiDzYGY2kpyEqhZAB3sT784EeUSCpXRxZCrbFhu6emxUeHQFWic3bcsgjBhPjUZBPOdfBoGIqkTslQsi2QJBG1SHIBbJNLDXZC64KqSuPlzAXqfieuN7CobVmkBzsu8doIpLhtRvyBEZB77S6dA8CH7BOZC5pDqGt0xHGX';
-        $phoneNumberId = '821517547705035';
+
+        $whatsapp = Whatsapp::first();
+
+        $token         = $whatsapp->token;
+        $phoneNumberId = $whatsapp->number_id;
+        
         $url = "https://graph.facebook.com/v23.0/{$phoneNumberId}/messages";
 
-        // IMPORTANT: use the number as given (your working code used `+880...`)
-        // If your DB stores local numbers (e.g., 018...), normalize BEFORE calling this method.
         $payload = [
             'messaging_product' => 'whatsapp',
-            'to'   => $to,          // e.g. "+8801XXXXXXXXX" or "8801XXXXXXXXX"
+            'to'   => $to,
             'type' => 'text',
             'text' => ['body' => $message],
         ];
@@ -89,6 +92,7 @@ class SendWhatsAppMessage extends Command
         try {
             $resp = Http::withToken($token)
                 ->acceptJson()
+                ->withoutVerifying()
                 ->post($url, $payload);
 
             if ($resp->successful()) {

@@ -21,8 +21,8 @@ Route::get('/admin/{any?}', function () {
 Route::get('/privacy_policy', [PageController::class, 'privacy_policy'])->name('privacy_policy');
 Route::get('/terms_condition', [PageController::class, 'terms_condition'])->name('terms_condition');
 
-Route::put('/whatsapp/api', [WhatsappController::class, 'index'])->name('whatsapp.index');
-Route::get('/whatsapp/send', [WhatsappController::class, 'send']);
+// Route::put('/whatsapp/api', [WhatsappController::class, 'index']);
+// Route::get('/whatsapp/send', [WhatsappController::class, 'send']);
 
 Route::get('/webhook/whatsapp',  [WhatsappWebhookController::class, 'verify']);  // GET verify
 Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])->withoutMiddleware([Csrf::class]);;
@@ -43,6 +43,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/clients', [ClientController::class, 'index'])->name('client.index');
     Route::get('/client/create', [ClientController::class, 'create'])->name('client.create');
     Route::put('/client/{client}', [ClientController::class, 'update'])->name('client.update');
+    
+    Route::get('/whatsapp', [WhatsappController::class, 'index'])->name('whatsapp.index');
+    Route::put('/whatsapp/{whatsapp}', [WhatsappController::class, 'update'])->name('whatsapp.update');
 });
 
 
