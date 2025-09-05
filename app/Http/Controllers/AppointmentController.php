@@ -85,27 +85,22 @@ class AppointmentController extends Controller
 
     public function update(Request $request, Appointment $appointment)
     {
-        // validate incoming data (tweak as needed)
-        $validated = $request->validate([
-            'client_id'          => ['required', 'integer', 'exists:clients,id'],
-            'service'            => ['required', 'string', 'max:255'],
-            'duration'           => ['nullable', 'string', 'max:50'],
-            'attendence_status'  => ['nullable', 'string', 'max:50'],
-            'appointment_time'   => ['required', 'date'],
-            'status'             => ['required', 'string', 'max:50'],
-            'notes'              => ['nullable', 'string'],
-        ]);
 
-        // If your frontend sends "datetime-local" (e.g., "2025-08-12T15:30"),
-        // Laravel will usually parse it; but to be explicit:
-        if (!empty($validated['appointment_time'])) {
-            $validated['appointment_time'] = Carbon::parse($validated['appointment_time']);
-        }
+        $validated = $request->validate([
+            'client_id'         => ['required', 'integer', 'exists:clients,id'],
+            'service'           => ['required', 'string', 'max:255'],
+            'duration'          => ['nullable', 'numeric', 'max:120'],
+            'attendance_status' => ['nullable', 'string', 'max:50'], // ✅ correct name
+            'appointment_time'  => ['required', 'date'],
+            'status'            => ['required', 'string', 'max:50'],
+            'reminder_sent'     => ['nullable', 'date'],
+            'notes'             => ['nullable', 'string'],
+        ]);
 
         $appointment->update($validated);
 
-        // Inertia-friendly redirect with flash
-        return back()->with('success', 'Appointment updated successfully.');
+        // 303 makes Inertia finalize the visit after PUT/PATCH/DELETE
+        return back(303)->with('success', 'Appointment updated successfully.');
     }
 
     public function destroy(int $id): RedirectResponse
