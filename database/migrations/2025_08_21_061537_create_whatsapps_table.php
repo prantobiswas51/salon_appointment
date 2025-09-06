@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('whatsapps', function (Blueprint $table) {
             $table->id();
+            $table->text('message')->nullable();
             $table->text('token')->nullable();
             $table->string('number_id')->nullable();
             $table->timestamps();

@@ -10,6 +10,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 type Whatsapp = {
   id: number;
+  message: string;
   token: string;
   number_id: string;
 };
@@ -22,11 +23,11 @@ export default function Index() {
   const { whatsapps } = usePage<PageProps>().props;
   const [selected, setSelected] = useState<Whatsapp | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ token: "", number_id: "" });
+  const [form, setForm] = useState({ message: "", token: "", number_id: "" });
 
   const openModal = (whatsapp: Whatsapp) => {
     setSelected(whatsapp);
-    setForm({ token: whatsapp.token, number_id: whatsapp.number_id });
+    setForm({ message: whatsapp.message, token: whatsapp.token, number_id: whatsapp.number_id });
     setShowModal(true);
   };
 
@@ -52,6 +53,7 @@ export default function Index() {
           <thead>
             <tr className="bg-gray-100 text-left">
               <th className="p-2">ID</th>
+              <th className="p-2">Message</th>
               <th className="p-2">Token</th>
               <th className="p-2">Number ID</th>
               <th className="p-2">Action</th>
@@ -61,6 +63,7 @@ export default function Index() {
             {whatsapps.map((w) => (
               <tr key={w.id} className="border-b">
                 <td className="p-2">{w.id}</td>
+                <td className="p-2 truncate max-w-xs">{w.message}</td>
                 <td className="p-2 truncate max-w-xs">{w.token}</td>
                 <td className="p-2">{w.number_id}</td>
                 <td className="p-2">
@@ -79,8 +82,21 @@ export default function Index() {
         {/* Edit Modal */}
         {showModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-gray-200/50 bg-opacity-50">
-            <div className="bg-white p-6 rounded shadow w-96">
+            <div className="bg-white p-6 rounded shadow w-xl">
               <h2 className="text-xl font-bold mb-4">Edit Whatsapp API</h2>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Message</label>
+                
+                <textarea
+                  value={form.message}
+                  onChange={(e) => setForm({ ...form, message: e.target.value })}
+                  className="w-full border p-2 rounded"
+                ></textarea>
+                <p className="text-gray-500/50">
+                  <i>'write the message as usual, just replace the name section with {'{$name}'} and time with {'{$time}'}.'</i>
+                </p>
+              </div>
 
               <div className="mb-4">
                 <label className="block text-sm font-medium">Token</label>

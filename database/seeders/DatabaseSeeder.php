@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         Whatsapp::create([
+            'message' => 'Update Me',
             'token' => 'Update Me',
             'number_id' => 'Update Me',
         ]);

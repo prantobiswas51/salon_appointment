@@ -42,8 +42,16 @@ class SendWhatsAppMessage extends Command
                         ? $appointment->appointment_time->timezone('Asia/Dhaka')->format('h:i A')
                         : null;
 
-                    // Compose your message (customize as you like)
-                    $message = "Hi {$name}, this is a reminder that your appointment is scheduled for tomorrow at {$time}. Reply if you need to reschedule.";
+                    $template = Whatsapp::first()->message;
+
+                    $vars = [
+                        'name' => $name,
+                        'time' => $time,
+                    ];
+
+                    $message = preg_replace_callback('/\{\$(\w+)\}/', function ($matches) use ($vars) {
+                        return $vars[$matches[1]] ?? $matches[0]; // replace if found, else keep as-is
+                    }, $template);
 
                     if ($dryRun) {
                         $this->line("DRY RUN → Would send to {$to}: \"{$message}\"");
@@ -79,7 +87,7 @@ class SendWhatsAppMessage extends Command
 
         $token         = $whatsapp->token;
         $phoneNumberId = $whatsapp->number_id;
-        
+
         $url = "https://graph.facebook.com/v23.0/{$phoneNumberId}/messages";
 
         $payload = [
