@@ -48,53 +48,92 @@ export default function Index() {
       <div className="p-2 m-4">
         <h1 className="text-2xl font-bold mb-4">Setup Whatsapp API</h1>
 
-        {/* Table of Records */}
-        <table className="min-w-full bg-white rounded shadow">
-          <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="p-2">ID</th>
-              <th className="p-2">Message</th>
-              <th className="p-2">Token</th>
-              <th className="p-2">Number ID</th>
-              <th className="p-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {whatsapps.map((w) => (
-              <tr key={w.id} className="border-b">
-                <td className="p-2">{w.id}</td>
-                <td className="p-2 truncate max-w-xs">{w.message}</td>
-                <td className="p-2 truncate max-w-xs">{w.token}</td>
-                <td className="p-2">{w.number_id}</td>
-                <td className="p-2">
-                  <button
-                    onClick={() => openModal(w)}
-                    className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
-                  >
-                    <FilePen size={16} /> Edit
-                  </button>
-                </td>
+        {/* ✅ Desktop Table */}
+        <div className="hidden lg:block overflow-x-auto">
+          <table className="min-w-full bg-white rounded shadow text-sm">
+            <thead>
+              <tr className="bg-gray-100 text-left">
+                <th className="p-2">ID</th>
+                <th className="p-2">Message</th>
+                <th className="p-2">Token</th>
+                <th className="p-2">Number ID</th>
+                <th className="p-2">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {whatsapps.map((w) => (
+                <tr key={w.id} className="border-b hover:bg-gray-50">
+                  <td className="p-2">{w.id}</td>
+                  <td className="p-2 truncate max-w-xs">{w.message}</td>
+                  <td className="p-2 truncate max-w-xs">{w.token}</td>
+                  <td className="p-2">{w.number_id}</td>
+                  <td className="p-2">
+                    <button
+                      onClick={() => openModal(w)}
+                      className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+                    >
+                      <FilePen size={16} /> Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Edit Modal */}
+        {/* ✅ Mobile Card Layout */}
+        <div className="block lg:hidden space-y-4">
+          {whatsapps.map((w) => (
+            <div
+              key={w.id}
+              className="bg-white rounded shadow p-4 border space-y-2"
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">ID: {w.id}</span>
+                <button
+                  onClick={() => openModal(w)}
+                  className="p-1 px-3 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex items-center gap-1"
+                >
+                  <FilePen size={14} /> Edit
+                </button>
+              </div>
+              <p className="text-sm">
+                <span className="font-semibold">Message:</span>{" "}
+                <span className="text-gray-700">{w.message}</span>
+              </p>
+              <p className="text-sm truncate">
+                <span className="font-semibold">Token:</span>{" "}
+                <span className="text-gray-700">{w.token}</span>
+              </p>
+              <p className="text-sm">
+                <span className="font-semibold">Number ID:</span>{" "}
+                <span className="text-gray-700">{w.number_id}</span>
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* ✅ Edit Modal */}
         {showModal && (
-          <div className="fixed inset-0 flex items-center justify-center bg-gray-200/50 bg-opacity-50">
-            <div className="bg-white p-6 rounded shadow w-xl">
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-700/40 p-4 z-50">
+            <div className="bg-white p-6 rounded shadow w-full max-w-xl">
               <h2 className="text-xl font-bold mb-4">Edit Whatsapp API</h2>
 
               <div className="mb-4">
                 <label className="block text-sm font-medium">Message</label>
-                
                 <textarea
                   value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, message: e.target.value })
+                  }
                   className="w-full border p-2 rounded"
                 ></textarea>
-                <p className="text-gray-500/50">
-                  <i>'write the message as usual, just replace the name section with {'{$name}'} and time with {'{$time}'}.'</i>
+                <p className="text-gray-500/50 text-xs mt-1">
+                  <i>
+                    Write the message as usual, just replace the name with
+                    <code>{` {$name} `}</code> and time with
+                    <code>{` {$time} `}</code>.
+                  </i>
                 </p>
               </div>
 
@@ -102,7 +141,9 @@ export default function Index() {
                 <label className="block text-sm font-medium">Token</label>
                 <textarea
                   value={form.token}
-                  onChange={(e) => setForm({ ...form, token: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, token: e.target.value })
+                  }
                   className="w-full border p-2 rounded"
                 ></textarea>
               </div>
@@ -138,5 +179,6 @@ export default function Index() {
         )}
       </div>
     </AppLayout>
+
   );
 }

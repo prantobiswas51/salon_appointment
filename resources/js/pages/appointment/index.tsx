@@ -115,111 +115,180 @@ export default function Index() {
       <div className="p-2 m-4">
         <h1 className="text-2xl font-bold mb-4">Scheduled Appointments</h1>
 
-        <form action="" method="get" className="mb-4 flex">
+        {/* search form */}
+        <form action="" method="get" className="mb-4 flex flex-col sm:flex-row">
           <input
             type="text"
             placeholder="Search by name, phone, email"
-            className="border p-2 px-4 min-w-lg rounded-md"
+            className="border p-2 px-4 flex-1 rounded-lg mb-2 sm:mb-0 sm:mr-2"
             name="q"
           />
           <button
             type="submit"
-            className="border flex rounded-md ml-2 p-2 bg-pink-600 text-white"
+            className="border flex justify-center items-center rounded-lg p-2 bg-pink-600 text-white"
           >
-            <Search /> <span className="ml-1">Search</span>
+            <Search className="mr-1" /> <span>Search</span>
           </button>
         </form>
 
-        <table className="w-full border-gray-300 rounded-lg shadow-md text-sm text-left">
-          <thead className="text-gray-900 uppercase rounded-md bg-pink-300">
-            <tr>
-              <th className="px-6 py-3 border-b p-2">Id</th>
-              <th className="px-6 py-3 border-b">Name</th>
-              <th className="px-6 py-3 border-b">Phone</th>
-              <th className="px-6 py-3 border-b">Service</th>
-              <th className="px-6 py-3 border-b">Time</th>
-              <th className="px-6 py-3 border-b">Status</th>
-              <th className="px-6 py-3 border-b">Reminder sent at</th>
-              <th className="px-6 py-3 border-b">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+        {/* responsive table */}
+        <div className="overflow-x-auto">
+          <table className="hidden lg:table min-w-full border-gray-300 rounded-lg shadow-lg text-sm text-left">
+            <thead className="text-gray-900 uppercase bg-pink-300">
+              <tr>
+                <th className="px-3 lg:px-6 py-3 border-b">Id</th>
+                <th className="px-3 lg:px-6 py-3 border-b">Name</th>
+                <th className="px-3 lg:px-6 py-3 border-b">Phone</th>
+                <th className="px-3 lg:px-6 py-3 border-b">Service</th>
+                <th className="px-3 lg:px-6 py-3 border-b">Time</th>
+                <th className="px-3 lg:px-6 py-3 border-b">Status</th>
+                <th className="px-3 lg:px-6 py-3 border-b">Reminder</th>
+                <th className="px-3 lg:px-6 py-3 border-b">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {appointments.data.map((appointment) => (
+                <tr key={appointment.id} className="hover:bg-gray-50 transition">
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.id}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.name}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.phone}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.service}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.appointment_time}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.status}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.reminder_sent}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b flex items-center">
+                    <FilePen
+                      className="text-amber-500 hover:text-amber-600 hover:cursor-pointer"
+                      onClick={() => openEdit(appointment)}
+                    />
+                    <button
+                      type="button"
+                      className={`ml-3 ${deletingId === appointment.id
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:cursor-pointer'
+                        }`}
+                      onClick={() => deleteAppointment(appointment.id)}
+                      disabled={deletingId === appointment.id}
+                    >
+                      <Trash className="text-red-500 hover:text-red-600" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Mobile Card View */}
+          <div className="space-y-4 lg:hidden">
             {appointments.data.map((appointment) => (
-              <tr key={appointment.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 border-b">{appointment.id}</td>
-                <td className="px-6 py-4 border-b">{appointment.client?.name}</td>
-                <td className="px-6 py-4 border-b">{appointment.client?.phone}</td>
-                <td className="px-6 py-4 border-b">{appointment.service}</td>
-                <td className="px-6 py-4 border-b">{appointment.appointment_time}</td>
-                <td className="px-6 py-4 border-b">{appointment.status}</td>
-                <td className="px-6 py-4 border-b">{appointment.reminder_sent}</td>
-                <td className="px-6 py-4 border-b flex items-center">
+              <div
+                key={appointment.id}
+                className="bg-white border rounded-lg p-4 shadow-sm"
+              >
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600 text-sm">ID</span>
+                  <span className="font-medium">{appointment.id}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600 text-sm">Name</span>
+                  <span>{appointment.client?.name}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600 text-sm">Phone</span>
+                  <span>{appointment.client?.phone}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600 text-sm">Service</span>
+                  <span>{appointment.service}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600 text-sm">Time</span>
+                  <span>{appointment.appointment_time}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600 text-sm">Status</span>
+                  <span>{appointment.status}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600 text-sm">Reminder</span>
+                  <span>{appointment.reminder_sent}</span>
+                </div>
+
+                <div className="flex justify-end mt-3">
                   <FilePen
-                    className="text-amber-500 hover:text-amber-600 hover:cursor-pointer"
+                    className="text-amber-500 hover:text-amber-600 hover:cursor-pointer mr-3"
                     onClick={() => openEdit(appointment)}
                   />
                   <button
                     type="button"
-                    aria-label="Delete appointment"
-                    className={`ml-3 ${deletingId === appointment.id ? 'opacity-50 cursor-not-allowed' : 'hover:cursor-pointer'}`}
+                    className={`${deletingId === appointment.id
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:cursor-pointer'
+                      }`}
                     onClick={() => deleteAppointment(appointment.id)}
                     disabled={deletingId === appointment.id}
-                    title={deletingId === appointment.id ? 'Deleting…' : 'Delete'}
                   >
                     <Trash className="text-red-500 hover:text-red-600" />
                   </button>
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
+
 
         {/* pagination */}
-        <div className="flex justify-center mt-6 space-x-2">
+        <div className="flex flex-wrap justify-center mt-6 space-x-2">
           {appointments.links.map((link, index) => (
             <button
               key={index}
               disabled={!link.url}
-              // Note: label may contain HTML entities from Laravel pagination
               dangerouslySetInnerHTML={{ __html: link.label }}
               onClick={() => link.url && router.visit(link.url)}
-              className={`px-3 py-1 border rounded
-                ${link.active ? 'bg-pink-600 text-white' : 'bg-white text-pink-600'}
-                ${!link.url ? 'opacity-50 cursor-not-allowed' : 'hover:cursor-pointer'}`}
+              className={`px-3 py-1 border rounded mb-2
+            ${link.active ? "bg-pink-600 text-white" : "bg-white text-pink-600"}
+            ${!link.url
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:cursor-pointer"
+                }`}
             />
           ))}
         </div>
 
         {/* edit modal */}
         {isModalOpen && editing && (
-          <div className="fixed inset-0 bg-gray-700/20 bg-opacity-50 flex justify-center items-center">
-            <div className="bg-sky-100 min-w-xl p-6 rounded-md shadow-lg w-[30rem]">
+          <div className="fixed inset-0 bg-gray-700/20 flex justify-center items-center p-4">
+            <div className="bg-sky-100 w-full max-w-[95%] sm:max-w-[30rem] p-6 rounded-lg shadow-lg">
               <h2 className="text-xl font-bold mb-4">Edit Appointment</h2>
               <form onSubmit={handleUpdate}>
                 <div className="mb-4">
                   <label className="block mb-2">Service</label>
                   <input
                     type="text"
-                    className="border p-2 rounded-md w-full"
+                    className="border p-2 rounded-lg w-full"
                     value={editing.service}
-                    onChange={(e) => setEditing({ ...editing, service: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, service: e.target.value })
+                    }
                   />
                 </div>
 
                 <div className="mb-4">
                   <label className="block mb-2">Duration</label>
                   <input
-                    type="text"
-                    className="border p-2 rounded-md w-full"
+                    type="number"
+                    className="border p-2 rounded-lg w-full"
                     value={editing.duration}
-                    onChange={(e) => setEditing({ ...editing, duration: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, duration: e.target.value })
+                    }
                   />
                 </div>
 
                 <div className="mb-4">
                   <label className="block mb-2">Attendance Status</label>
                   <select
-                    className="border p-2 rounded-md w-full"
+                    className="border p-2 rounded-lg w-full"
                     value={editing.attendence_status}
                     onChange={(e) =>
                       setEditing({ ...editing, attendence_status: e.target.value })
@@ -228,43 +297,48 @@ export default function Index() {
                     <option value="Confirmed">Confirmed</option>
                     <option value="Canceled">Canceled</option>
                     <option value="Scheduled">Scheduled</option>
-                    </select>
+                  </select>
                 </div>
 
                 <div className="mb-4">
                   <label className="block mb-2">Appointment Time</label>
                   <input
-                    type="text"
-                    className="border p-2 rounded-md w-full"
+                    type="datetime-local"
+                    className="border p-2 rounded-lg w-full"
                     value={editing.appointment_time}
                     onChange={(e) =>
-                      setEditing({ ...editing, appointment_time: e.target.value })
+                      setEditing({
+                        ...editing,
+                        appointment_time: e.target.value,
+                      })
                     }
                   />
-                  {/* if your API expects ISO datetime, consider using <input type="datetime-local" /> */}
                 </div>
 
                 <div className="mb-4">
                   <label className="block mb-2">Status</label>
                   <input
                     type="text"
-                    className="border p-2 rounded-md w-full"
+                    className="border p-2 rounded-lg w-full"
                     value={editing.status}
-                    onChange={(e) => setEditing({ ...editing, status: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, status: e.target.value })
+                    }
                   />
                 </div>
 
                 <div className="mb-4">
                   <label className="block mb-2">Notes</label>
                   <textarea
-                    className="border p-2 rounded-md w-full"
-                    value={editing.notes ?? ''}
-                    onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
+                    className="border p-2 rounded-lg w-full"
+                    value={editing.notes ?? ""}
+                    onChange={(e) =>
+                      setEditing({ ...editing, notes: e.target.value })
+                    }
                   />
                 </div>
 
-                {/* read-only client info (optional) */}
-                <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
                     <div className="font-medium text-gray-700">Client</div>
                     <div className="mt-1">{editing.client?.name}</div>
@@ -275,10 +349,10 @@ export default function Index() {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end flex-wrap">
                   <button
                     type="button"
-                    className="mr-2 border px-4 py-2 rounded-md text-gray-600"
+                    className="mr-2 mb-2 border px-4 py-2 rounded-lg text-gray-600"
                     onClick={closeEdit}
                     disabled={submitting}
                   >
@@ -286,10 +360,10 @@ export default function Index() {
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-60"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-60"
                     disabled={submitting}
                   >
-                    {submitting ? 'Saving…' : 'Save Changes'}
+                    {submitting ? "Saving…" : "Save Changes"}
                   </button>
                 </div>
               </form>
@@ -298,5 +372,6 @@ export default function Index() {
         )}
       </div>
     </AppLayout>
+
   );
 }
