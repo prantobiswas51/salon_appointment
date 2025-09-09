@@ -2,10 +2,11 @@
 
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\WhatsappController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AppointmentController;
-use App\Http\Controllers\PageController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Csrf;
 
@@ -30,10 +31,8 @@ Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])->
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
     Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointment.index');
     Route::get('/appointment/create', [AppointmentController::class, 'create'])->name('appointment.create');
     Route::post('/appointment/store', [AppointmentController::class, 'store'])->name('appointment.store');
@@ -43,7 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/clients', [ClientController::class, 'index'])->name('client.index');
     Route::get('/client/create', [ClientController::class, 'create'])->name('client.create');
     Route::put('/client/{client}', [ClientController::class, 'update'])->name('client.update');
-    
+
     Route::get('/whatsapp', [WhatsappController::class, 'index'])->name('whatsapp.index');
     Route::put('/whatsapp/{whatsapp}', [WhatsappController::class, 'update'])->name('whatsapp.update');
 });
