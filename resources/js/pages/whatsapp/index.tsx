@@ -50,9 +50,9 @@ export default function Index() {
 
         {/* ✅ Desktop Table */}
         <div className="hidden lg:block overflow-x-auto">
-          <table className="min-w-full bg-white rounded shadow text-sm">
+          <table className="min-w-full bg-white dark:bg-gray-800 rounded shadow text-sm">
             <thead>
-              <tr className="bg-gray-100 text-left">
+              <tr className="bg-gray-100 dark:bg-gray-700 text-left">
                 <th className="p-2">ID</th>
                 <th className="p-2">Message</th>
                 <th className="p-2">Token</th>
@@ -62,7 +62,7 @@ export default function Index() {
             </thead>
             <tbody>
               {whatsapps.map((w) => (
-                <tr key={w.id} className="border-b hover:bg-gray-50">
+                <tr key={w.id} className="border-b hover:bg-gray-600">
                   <td className="p-2">{w.id}</td>
                   <td className="p-2 truncate max-w-xs">{w.message}</td>
                   <td className="p-2 truncate max-w-xs">{w.token}</td>
@@ -86,7 +86,7 @@ export default function Index() {
           {whatsapps.map((w) => (
             <div
               key={w.id}
-              className="bg-white rounded shadow p-4 border space-y-2"
+              className="bg-white dark:bg-gray-900 rounded shadow p-4 border space-y-2"
             >
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">ID: {w.id}</span>
@@ -116,7 +116,7 @@ export default function Index() {
         {/* ✅ Edit Modal */}
         {showModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-gray-700/40 p-4 z-50">
-            <div className="bg-white p-6 rounded shadow w-full max-w-xl">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded shadow w-full max-w-xl">
               <h2 className="text-xl font-bold mb-4">Edit Whatsapp API</h2>
 
               <div className="mb-4">
@@ -126,9 +126,9 @@ export default function Index() {
                   onChange={(e) =>
                     setForm({ ...form, message: e.target.value })
                   }
-                  className="w-full border p-2 rounded"
+                  className="w-full border p-2 rounded dark:border-gray-100"
                 ></textarea>
-                <p className="text-gray-500/50 text-xs mt-1">
+                <p className="text-gray-500/50 dark:text-gray-100 text-xs mt-1">
                   <i>
                     Write the message as usual, just replace the name with
                     <code>{` {$name} `}</code> and time with
@@ -144,7 +144,7 @@ export default function Index() {
                   onChange={(e) =>
                     setForm({ ...form, token: e.target.value })
                   }
-                  className="w-full border p-2 rounded"
+                  className="w-full border dark:border-gray-100 p-2 rounded"
                 ></textarea>
               </div>
 
@@ -156,7 +156,7 @@ export default function Index() {
                   onChange={(e) =>
                     setForm({ ...form, number_id: e.target.value })
                   }
-                  className="w-full border p-2 rounded"
+                  className="w-full border p-2 dark:border-gray-100 rounded"
                 />
               </div>
 

@@ -14,7 +14,7 @@ export default function Dashboard() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex flex-col md:grid md:grid-cols-2">
+            <div className="flex flex-col md:grid md:grid-cols-2 dark:bg-gray-900 p-2 rounded-lg">
                 <div className="w-auto border p-2 bg-sky-200/30 border-sky-500 m-2 rounded-md shadow-sm">
                     <h2 className='text-xl font-bold flex'><Timer className='mr-2' />Appointment in Progress</h2>
                     <h3 className='font-semibold flex'>Pranto Biswas</h3>
@@ -30,7 +30,7 @@ export default function Dashboard() {
             </div>
 
             <h2 className='text-xl font-bold flex mx-2 mt-6'>Today's Agenda</h2>
-            <div className="w-auto mx-2 rounded-md md:grid md:grid-cols-3 gap-3">
+            <div className="w-auto px-4 md:grid md:grid-cols-3 gap-3 dark:bg-gray-900 p-2 rounded-lg">
 
                 <div className="p-2 my-2 rounded-md bg-pink-300/60 border border-pink-500 shadow-sm">
                     <div className="font-bold">Today</div>

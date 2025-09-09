@@ -183,7 +183,7 @@ export default function Index() {
             {appointments.data.map((appointment) => (
               <div
                 key={appointment.id}
-                className="bg-white border rounded-lg p-4 shadow-sm"
+                className="bg-white dark:bg-gray-800 border rounded-lg p-4 shadow-sm"
               >
                 <div className="flex justify-between mb-2">
                   <span className="text-gray-600 text-sm">ID</span>
@@ -258,14 +258,14 @@ export default function Index() {
         {/* edit modal */}
         {isModalOpen && editing && (
           <div className="fixed inset-0 bg-gray-700/20 flex justify-center items-center p-4">
-            <div className="bg-sky-100 w-full max-w-[95%] sm:max-w-[30rem] p-6 rounded-lg shadow-lg">
+            <div className="bg-sky-100 dark:bg-gray-800 dark:border-gray-100 w-full max-w-[95%] sm:max-w-[30rem] p-6 rounded-lg shadow-lg">
               <h2 className="text-xl font-bold mb-4">Edit Appointment</h2>
               <form onSubmit={handleUpdate}>
                 <div className="mb-4">
                   <label className="block mb-2">Service</label>
                   <input
                     type="text"
-                    className="border p-2 rounded-lg w-full"
+                    className="border p-2 rounded-lg w-full dark:border-gray-300"
                     value={editing.service}
                     onChange={(e) =>
                       setEditing({ ...editing, service: e.target.value })
@@ -277,7 +277,7 @@ export default function Index() {
                   <label className="block mb-2">Duration</label>
                   <input
                     type="number"
-                    className="border p-2 rounded-lg w-full"
+                    className="border p-2 rounded-lg w-full dark:border-gray-300"
                     value={editing.duration}
                     onChange={(e) =>
                       setEditing({ ...editing, duration: e.target.value })
@@ -288,7 +288,7 @@ export default function Index() {
                 <div className="mb-4">
                   <label className="block mb-2">Attendance Status</label>
                   <select
-                    className="border p-2 rounded-lg w-full"
+                    className="border p-2 rounded-lg w-full dark:border-gray-300"
                     value={editing.attendence_status}
                     onChange={(e) =>
                       setEditing({ ...editing, attendence_status: e.target.value })
@@ -304,7 +304,7 @@ export default function Index() {
                   <label className="block mb-2">Appointment Time</label>
                   <input
                     type="datetime-local"
-                    className="border p-2 rounded-lg w-full"
+                    className="border p-2 rounded-lg w-full dark:border-gray-300"
                     value={editing.appointment_time}
                     onChange={(e) =>
                       setEditing({
@@ -319,7 +319,7 @@ export default function Index() {
                   <label className="block mb-2">Status</label>
                   <input
                     type="text"
-                    className="border p-2 rounded-lg w-full"
+                    className="border p-2 rounded-lg w-full dark:border-gray-300"
                     value={editing.status}
                     onChange={(e) =>
                       setEditing({ ...editing, status: e.target.value })
@@ -330,7 +330,7 @@ export default function Index() {
                 <div className="mb-4">
                   <label className="block mb-2">Notes</label>
                   <textarea
-                    className="border p-2 rounded-lg w-full"
+                    className="border p-2 rounded-lg w-full dark:border-gray-300"
                     value={editing.notes ?? ""}
                     onChange={(e) =>
                       setEditing({ ...editing, notes: e.target.value })
@@ -340,8 +340,8 @@ export default function Index() {
 
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
-                    <div className="font-medium text-gray-700">Client</div>
-                    <div className="mt-1">{editing.client?.name}</div>
+                    <div className="font-medium text-gray-700 ">Client</div>
+                    <div className="mt-1 ">{editing.client?.name}</div>
                   </div>
                   <div>
                     <div className="font-medium text-gray-700">Phone</div>
