@@ -62,7 +62,7 @@ export default function CreateAppointment() {
             <div className="flex flex-col md:flex-row">
                 {/* Form Section */}
                 <div className="flex items-center w-full md:w-1/2 p-4">
-                    <div className="mx-auto w-full max-w-xl bg-pink-50 border rounded-2xl shadow-md p-6 sm:p-10">
+                    <div className="mx-auto w-full max-w-xl bg-pink-50 dark:bg-gray-900 border rounded-2xl shadow-md p-6 sm:p-10">
                         <h1 className="text-xl font-bold mb-6 bg-pink-500 p-2 rounded-md text-white">
                             Create New Appointment
                         </h1>
@@ -85,8 +85,8 @@ export default function CreateAppointment() {
                                     });
                                 }}
                                 className={`px-4 py-2 rounded ${activeTab === "new"
-                                        ? "bg-pink-600 text-white"
-                                        : "bg-gray-200 text-gray-700"
+                                    ? "bg-pink-600 text-white"
+                                    : "bg-gray-200 text-gray-700"
                                     }`}
                             >
                                 New Client
@@ -108,8 +108,8 @@ export default function CreateAppointment() {
                                     });
                                 }}
                                 className={`px-4 py-2 rounded ${activeTab === "existing"
-                                        ? "bg-pink-600 text-white"
-                                        : "bg-gray-200 text-gray-700"
+                                    ? "bg-pink-600 text-white"
+                                    : "bg-gray-200 text-gray-700"
                                     }`}
                             >
                                 Existing Client

@@ -25,7 +25,7 @@ export function NavMain({ items }: NavMainProps) {
                 return (
                     <div key={item.href}>
                         <div
-                            className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                            className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-amber-800 rounded cursor-pointer"
                             onClick={() => item.children ? toggleMenu(item.href) : null}
                         >
                             <Link
