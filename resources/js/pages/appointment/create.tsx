@@ -1,71 +1,98 @@
-import React from 'react';
-import { Head, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { usePage } from '@inertiajs/react';
-import WeekCalendar from "@/components/WeekCalendar";
+import React, { useEffect, useState } from "react";
+import { Head, useForm, usePage, router } from "@inertiajs/react";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import axios from "axios";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import { Dialog } from "@headlessui/react";
+import { RefreshCcw } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'New Appointment',
-        href: '/appointment',
-    },
+    { title: "New Appointment", href: "/appointment" },
 ];
 
-function FlashMessage({ type, message }: { type: 'success' | 'error'; message: string }) {
-    const bg = type === 'success'
-        ? 'bg-green-100 border-green-300 text-green-800'
-        : 'bg-red-100 border-red-300 text-red-800';
-
-    return (
-        <div className={`mb-4 p-3 border ${bg} rounded`}>
-            {message}
-        </div>
-    );
-}
-
 export default function CreateAppointment() {
-    const [activeTab, setActiveTab] = React.useState<'existing' | 'new'>('new');
+    const [events, setEvents] = useState<any[]>([]);
+    const [isOpen, setIsOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<"existing" | "new">("new");
 
     const page = usePage();
     const flash = page.props?.flash || {};
 
-    const { data, setData, post, processing, errors } = useForm({
-        client_number: '',
-        email: '',
-        new_client_name: '',
-        new_client_phone: '',
-        service: '',
-        appointment_time: '',
-        status: 'Scheduled',
-        notes: '',
+    // ---- FORM STATE ----
+    const { data, setData, post, processing, errors, reset } = useForm({
+        client_number: "",
+        email: "",
+        new_client_name: "",
+        new_client_phone: "",
+        service: "",
+        start_time: "",
+        duration: "",
+        status: "Scheduled",
+        notes: "",
     });
 
+    const formatDateForInput = (date: Date) => {
+        return date.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:mm"
+    };
+
+    // ---- Load Calendar Events ----
+    useEffect(() => {
+        axios.get("/calendar/events").then((res) => {
+            setEvents(res.data);
+        });
+    }, []);
+
+
+    // ---- When Slot is Selected ----
+    const handleSelect = (info: any) => {
+        setData("start_time", formatDateForInput(info.start));
+        setIsOpen(true);
+    };
+
+    // ---- Submit Form ----
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/appointment/store', {
+        post("/appointment/store", {
             onSuccess: () => {
-                console.log("Appointment created successfully!");
+                alert("Appointment saved!");
+                setIsOpen(false);
+                reset();
             },
-            onError: (errors) => {
-                console.error("Validation errors:", errors);
-            },
-            onFinish: () => {
-                console.log("Request finished.");
-            }
         });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="New Appointment" />
-            <div className="flex flex-col md:flex-row">
-                {/* Form Section */}
-                <div className="flex items-center w-full md:w-1/2 p-4">
-                    <div className="mx-auto w-full max-w-xl bg-pink-50 dark:bg-gray-900 border rounded-2xl shadow-md p-6 sm:p-10">
-                        <h1 className="text-xl font-bold mb-6 bg-pink-500 p-2 rounded-md text-white">
-                            Create New Appointment
-                        </h1>
+
+            {/* Calendar Section */}
+            <div className="p-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold mb-4">Calendar</h2>
+                    <button onClick={() => window.location.reload()}
+                        className="px-3 py-1 bg-blue-500 flex  text-white rounded hover:bg-blue-600"
+                    > <RefreshCcw className="mr-2 w-4"/> Sync</button>
+                </div>
+                <FullCalendar
+                    plugins={[timeGridPlugin, interactionPlugin]}
+                    initialView="timeGridWeek"
+                    selectable={true}
+                    events={events}
+                    select={handleSelect}
+                    slotMinTime="09:00:00"
+                    slotMaxTime="17:00:00"
+                    height="auto"
+                />
+            </div>
+
+            {/* Popup Modal with Form + Tabs */}
+            <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
+                <div className="fixed inset-0 flex items-center justify-center bg-black/50">
+                    <div className="bg-white p-6 rounded shadow w-full max-w-lg">
+                        <h3 className="text-lg font-bold mb-4">Book Appointment</h3>
 
                         {/* Tabs */}
                         <div className="flex space-x-4 mb-6">
@@ -79,7 +106,8 @@ export default function CreateAppointment() {
                                         new_client_name: "",
                                         new_client_phone: "",
                                         service: "",
-                                        appointment_time: "",
+                                        duration: "",
+                                        start_time: data.start_time,
                                         status: "Scheduled",
                                         notes: "",
                                     });
@@ -91,7 +119,6 @@ export default function CreateAppointment() {
                             >
                                 New Client
                             </button>
-
                             <button
                                 type="button"
                                 onClick={() => {
@@ -102,8 +129,9 @@ export default function CreateAppointment() {
                                         new_client_name: "",
                                         new_client_phone: "",
                                         service: "",
-                                        appointment_time: "",
-                                        status: "",
+                                        duration: "",
+                                        start_time: data.start_time,
+                                        status: "Scheduled",
                                         notes: "",
                                     });
                                 }}
@@ -116,14 +144,8 @@ export default function CreateAppointment() {
                             </button>
                         </div>
 
-                        {flash.success && (
-                            <FlashMessage type="success" message={flash.success} />
-                        )}
-                        {flash.error && <FlashMessage type="error" message={flash.error} />}
-
-                        {/* Form */}
+                        {/* FORM */}
                         <form onSubmit={submit} className="space-y-4">
-                            {/* Client Fields */}
                             {activeTab === "existing" ? (
                                 <div>
                                     <label className="block mb-1">Client Number</label>
@@ -175,9 +197,7 @@ export default function CreateAppointment() {
                                             value={data.email}
                                             onChange={(e) => setData("email", e.target.value)}
                                         />
-                                        {errors.email && (
-                                            <p className="text-red-500">{errors.email}</p>
-                                        )}
+                                        {errors.email && <p className="text-red-500">{errors.email}</p>}
                                     </div>
                                 </div>
                             )}
@@ -195,69 +215,74 @@ export default function CreateAppointment() {
                                     <option value="Beard Shaping">Beard Shaping</option>
                                     <option value="Other Services">Other Services</option>
                                 </select>
-                                {errors.service && (
-                                    <p className="text-red-500">{errors.service}</p>
+                                {errors.service && <p className="text-red-500">{errors.service}</p>}
+                            </div>
+
+                            {/* Appointment Time */}
+                            <div>
+                                <label className="block mb-1">Appointment Time</label>
+                                <input
+                                    type="datetime-local"
+                                    className="w-full border p-2 rounded"
+                                    value={data.start_time}
+                                    onChange={(e) => setData("start_time", e.target.value)}
+                                />
+
+                                {errors.start_time && (
+                                    <p className="text-red-500">{errors.start_time}</p>
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block mb-1">Appointment Time</label>
-                                    <input
-                                        type="datetime-local"
-                                        className="w-full border p-2 rounded"
-                                        value={data.appointment_time}
-                                        onChange={(e) => setData("appointment_time", e.target.value)}
-                                    />
-                                    {errors.appointment_time && (
-                                        <p className="text-red-500">{errors.appointment_time}</p>
-                                    )}
-                                </div>
+                            {/* Duration */}
+                            <div>
+                                <label className="block mb-1">Duration</label>
+                                <input
+                                    type="number"
+                                    className="w-full border p-2 rounded" placeholder="30"
+                                    value={data.duration}
+                                    onChange={(e) => setData("duration", e.target.value)}
+                                />
+                                {errors.duration && <p className="text-red-500">{errors.duration}</p>}
+                            </div>
 
-                                {/* Status */}
-                                <div>
-                                    <label className="block mb-1">Status</label>
-                                    <select
-                                        value={data.status}
-                                        onChange={(e) => setData("status", e.target.value)}
-                                        className="w-full border p-2 rounded"
-                                    >
-                                        <option value="Scheduled">Scheduled</option>
-                                        <option value="Confirmed">Confirmed</option>
-                                        <option value="Canceled">Canceled</option>
-                                    </select>
-                                    {errors.status && (
-                                        <p className="text-red-500">{errors.status}</p>
-                                    )}
-                                </div>
+                            {/* Status */}
+                            <div>
+                                <label className="block mb-1">Status</label>
+                                <select
+                                    value={data.status}
+                                    onChange={(e) => setData("status", e.target.value)}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="Scheduled">Scheduled</option>
+                                    <option value="Confirmed">Confirmed</option>
+                                    <option value="Canceled">Canceled</option>
+                                </select>
+                                {errors.status && <p className="text-red-500">{errors.status}</p>}
                             </div>
 
                             {/* Notes */}
                             <div>
-                                <label
-                                    htmlFor="notes"
-                                    className="block mb-1 font-medium text-gray-700"
-                                >
-                                    Notes
-                                </label>
+                                <label className="block mb-1">Notes</label>
                                 <textarea
-                                    id="notes"
-                                    name="notes"
+                                    className="w-full border p-2 rounded"
                                     value={data.notes}
                                     onChange={(e) => setData("notes", e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-pink-200"
-                                ></textarea>
-                                {errors.notes && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.notes}</p>
-                                )}
+                                />
                             </div>
 
-                            {/* Submit Button */}
-                            <div>
+                            {/* Buttons */}
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    type="button"
+                                    className="px-4 py-2 bg-gray-300 rounded"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Cancel
+                                </button>
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-4 py-2 bg-pink-600 text-white rounded w-full md:w-auto"
+                                    className="px-4 py-2 bg-pink-600 text-white rounded"
                                 >
                                     Save Appointment
                                 </button>
@@ -265,18 +290,7 @@ export default function CreateAppointment() {
                         </form>
                     </div>
                 </div>
-
-                {/* Calendar Section */}
-                <div className="w-full md:w-1/2 h-[400px] md:h-screen p-4">
-                    <WeekCalendar
-                        value={data.appointment_time}
-                        onChange={(val) => setData("appointment_time", val)}
-                        weekStartsOn={0} // 0=Sunday, 1=Monday
-                        slotMinutes={30}
-                    />
-                </div>
-            </div>
+            </Dialog>
         </AppLayout>
-
     );
 }

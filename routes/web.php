@@ -1,6 +1,9 @@
 <?php
 
+use Google\Client;
 use Inertia\Inertia;
+use Google\Service\Calendar;
+use Spatie\GoogleCalendar\Event;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ClientController;
@@ -32,7 +35,7 @@ Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])->
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointment.index');
     Route::get('/appointment/create', [AppointmentController::class, 'create'])->name('appointment.create');
     Route::post('/appointment/store', [AppointmentController::class, 'store'])->name('appointment.store');
@@ -47,8 +50,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/whatsapp/{whatsapp}', [WhatsappController::class, 'update'])->name('whatsapp.update');
 });
 
+Route::get('/calendar/freebusy', function () {
+    $client = new Client();
+    $client->setAuthConfig(storage_path('app/google-calendar/service-account-credentials.json'));
+    $client->addScope(Calendar::CALENDAR);
 
+    // 👇 impersonate the calendar owner
+    $client->setSubject("bongomaker@future-abacus-471518-g0.iam.gserviceaccount.com");
 
+    $service = new Calendar($client);
+
+    $timeMin = now()->startOfDay()->toRfc3339String();
+    $timeMax = now()->addWeek()->endOfDay()->toRfc3339String();
+
+    $requestBody = new \Google\Service\Calendar\FreeBusyRequest([
+        'timeMin' => $timeMin,
+        'timeMax' => $timeMax,
+        'items' => [
+            ['id' => 'primary']
+        ]
+    ]);
+
+    $freebusy = $service->freebusy->query($requestBody);
+
+    return response()->json($freebusy);
+});
+
+// routes/web.php
+Route::get('/calendar/events', [AppointmentController::class, 'events']);
+
+Route::get('/appointments', [AppointmentController::class, 'index']);
+Route::post('/appointments/store', [AppointmentController::class, 'store']);
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

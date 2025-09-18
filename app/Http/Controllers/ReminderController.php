@@ -21,14 +21,14 @@ class ReminderController extends Controller
         $tomorrowEnd = Carbon::now($tz)->addDay()->endOfDay();
 
         $appointments = Appointment::with('client') // eager load client data
-            ->whereBetween('appointment_time', [$tomorrowStart, $tomorrowEnd])
+            ->whereBetween('start_time', [$tomorrowStart, $tomorrowEnd])
             ->where('reminder_sent', false)
             ->get();
 
         foreach ($appointments as $appointment) {
             $phone = $appointment->client->phone;
             $clientName = $appointment->client->name;
-            $appointmentTime = Carbon::parse($appointment->appointment_time)->format('h:i A');
+            $appointmentTime = Carbon::parse($appointment->start_time)->format('h:i A');
 
             // Prepare the message components (assuming you are using a template)
             $components = [

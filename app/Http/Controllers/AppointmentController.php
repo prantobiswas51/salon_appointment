@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
+use Spatie\GoogleCalendar\Event as GoogleEvent;
 use Inertia\Inertia;
 use App\Models\Client;
 use App\Models\Appointment;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-
 use function Pest\Laravel\json;
+
+use Spatie\GoogleCalendar\Event;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 use function PHPUnit\Framework\returnSelf;
 
@@ -17,8 +19,7 @@ class AppointmentController extends Controller
 {
     public function index()
     {
-        $appointments = Appointment::with('client') // optional if you want client names
-            // ->where('status', 'Scheduled')
+        $appointments = Appointment::with('client')
             ->orderByDesc('created_at')
             ->paginate(10);
 
@@ -27,6 +28,26 @@ class AppointmentController extends Controller
         ]);
     }
 
+    public function events()
+    {
+        // fetch Google Calendar events
+        $googleEvents = GoogleEvent::get();
+
+        // map Google events to FullCalendar format
+        $events = $googleEvents->map(function ($event) {
+            return [
+                'title' => $event->name,
+                'start' => Carbon::parse($event->startDateTime)->toIso8601String(),
+                'end'   => Carbon::parse($event->endDateTime)->toIso8601String(),
+                'backgroundColor' => '#ef4444',
+                'borderColor' => '#b91c1c',
+            ];
+        });
+
+        return response()->json($events);
+    }
+
+
     public function create()
     {
         return Inertia::render('appointment/create');
@@ -34,84 +55,102 @@ class AppointmentController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'client_number' => 'nullable|string',
-            'new_client_name' => 'nullable|string',
-            'new_client_phone' => 'nullable|string',
-            'email' => 'nullable|email',
-            'service' => 'required|in:Hair Cut,Beard Shaping,Other Services',
-            'appointment_time' => 'required|date',
-            'status' => 'required|in:Scheduled,Confirmed,Canceled',
-            'notes' => 'nullable|string',
+        $request->validate([
+            'client_number'     => 'nullable|string',
+            'new_client_name'   => 'nullable|string',
+            'new_client_phone'  => 'nullable|string',
+            'email'             => 'nullable|email',
+            'service'           => 'required|in:Hair Cut,Beard Shaping,Other Services',
+            'start_time'        => 'required|date',
+            'duration'          => 'required|integer|min:5',
+            'status'            => 'required|in:Scheduled,Confirmed,Canceled',
+            'notes'             => 'nullable|string',
         ]);
 
-        try {
-            if ($request->client_number) {
+        // normalize start/end
+        $start = Carbon::parse($request->start_time);
+        $end = (clone $start)->addMinutes((int) $request->duration);
 
-                $client = Client::where('phone', $request->client_number)->firstOrFail();
+        // find or create client
+        $client = Client::firstOrCreate(
+            ['phone' => $request->client_number ?? $request->new_client_phone],
+            ['name' => $request->new_client_name, 'email' => $request->email]
+        );
 
-                $appointment = new Appointment();
-                $appointment->client_id = $client->id;
-                $appointment->service = $request->service;
-                $appointment->duration = "30";
-                $appointment->appointment_time = $request->appointment_time;
-                $appointment->notes = $request->notes;
-                $appointment->status = $request->status;
-                $appointment->save();
-            }
+        $event = Event::create([
+            'name' => $client->name . ' - ' . $request->service,
+            'startDateTime' => $start,
+            'endDateTime'   => $end,
+        ]);
 
-            if ($request->new_client_phone) {
-                $client = new Client();
-                $client->name = $request->new_client_name;
-                $client->phone = $request->new_client_phone;
-                $client->email = $request->email;
-                $client->save();
+        // save it in your DB
+        $appointment = new Appointment();
+        $appointment->event_id   = $event->id;
+        $appointment->client_id  = $client->id;
+        $appointment->service    = $request->service;
+        $appointment->duration   = $request->duration;
+        $appointment->start_time = $start;
+        $appointment->status     = $request->status;
+        $appointment->notes      = $request->notes;
+        $appointment->save();
 
-                $appointment = new Appointment();
-                $appointment->client_id = $client->id;
-                $appointment->service = $request->service;
-                $appointment->duration = "30";
-                $appointment->appointment_time = $request->appointment_time;
-                $appointment->notes = $request->notes;
-                $appointment->status = $request->status;
-                $appointment->save();
-            }
 
-            return redirect()->back()->with('success', 'Created Successfully');
-        } catch (\Throwable $th) {
-            return redirect()->back()->with('error', 'Something went wrong: ' . $th->getMessage());
-        }
+
+
+        return redirect()->back()->with('success', 'Appointment created successfully!');
     }
 
     public function update(Request $request, Appointment $appointment)
     {
-
         $validated = $request->validate([
             'client_id'         => ['required', 'integer', 'exists:clients,id'],
             'service'           => ['required', 'string', 'max:255'],
             'duration'          => ['nullable', 'numeric', 'max:120'],
-            'attendance_status' => ['nullable', 'string', 'max:50'], // ✅ correct name
-            'appointment_time'  => ['required', 'date'],
+            'attendance_status' => ['nullable', 'string', 'max:50'],
+            'start_time'        => ['required', 'date'],
             'status'            => ['required', 'string', 'max:50'],
             'reminder_sent'     => ['nullable', 'date'],
             'notes'             => ['nullable', 'string'],
         ]);
 
+        // Update appointment locally
         $appointment->update($validated);
 
-        // 303 makes Inertia finalize the visit after PUT/PATCH/DELETE
+        if ($appointment->event_id) {
+            $event = Event::find($appointment->event_id);
+
+            if ($event) {
+                $event->name = $appointment->client->name . ' - ' . $appointment->service;
+                $event->startDateTime = $appointment->start_time;
+
+                $duration = (int) ($appointment->duration ?? 30);
+                $event->endDateTime = (clone $appointment->start_time)->addMinutes($duration);
+
+                $event->save();
+            }
+        }
+
+
         return back(303)->with('success', 'Appointment updated successfully.');
     }
-
     public function destroy(int $id): RedirectResponse
     {
         $appointment = Appointment::findOrFail($id);
 
+        // Delete the Google Calendar event first
+        if ($appointment->event_id) {
+            $event = Event::find($appointment->event_id); // only works if $event_id is Spatie Event::id
+            // If $appointment->event_id is Google Event ID, do:
+            $googleEvent = Event::find($appointment->event_id);
+            $googleEvent?->delete();
+        }
+
+        // Delete the appointment locally
         $appointment->delete();
 
         // If you’re using Inertia + Ziggy:
         return redirect()
-            ->route('appointment.index')
+            ->back()
             ->with('success', 'Appointment deleted successfully.');
     }
 }

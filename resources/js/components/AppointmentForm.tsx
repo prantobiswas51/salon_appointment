@@ -3,7 +3,7 @@ import React, { useState } from "react";
 interface AppointmentData {
   client_id: number;
   service: string;
-  appointment_time: string;
+  start_time: string;
   duration?: number;
   attendance_status?: string;
   status?: string;
@@ -15,7 +15,7 @@ const AppointmentForm: React.FC = () => {
   const [data, setData] = useState<AppointmentData>({
     client_id: 1,
     service: "Hair Cut",
-    appointment_time: "",
+    start_time: "",
     duration: 60,
     attendance_status: "",
     status: "Scheduled",
@@ -74,12 +74,12 @@ const AppointmentForm: React.FC = () => {
       </div>
 
       <div>
-        <label htmlFor="appointment_time">Appointment Time</label>
+        <label htmlFor="start_time">Appointment Time</label>
         <input
           type="datetime-local"
-          name="appointment_time"
-          id="appointment_time"
-          value={data.appointment_time}
+          name="start_time"
+          id="start_time"
+          value={data.start_time}
           onChange={handleChange}
         />
       </div>

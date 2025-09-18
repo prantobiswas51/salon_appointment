@@ -14,8 +14,8 @@ class DashboardController extends Controller
         $today = now()->toDateString();
 
         $appointments = Appointment::with('client')
-            ->whereDate('appointment_time', $today)
-            ->orderBy('appointment_time')
+            ->whereDate('start_time', $today)
+            ->orderBy('start_time')
             ->get();
 
         // Current in-progress appointment
@@ -25,9 +25,9 @@ class DashboardController extends Controller
 
         // Next appointment (not started yet, after now)
         $nextAppointment = Appointment::with('client')
-            ->where('appointment_time', '>', now())
+            ->where('start_time', '>', now())
             ->where('status', 'scheduled')
-            ->orderBy('appointment_time')
+            ->orderBy('start_time')
             ->first();
 
         return inertia('Dashboard', [
@@ -35,7 +35,7 @@ class DashboardController extends Controller
                 'id' => $a->id,
                 'client_name' => $a->client->name,
                 'service' => $a->service,
-                'appointment_time' => $a->appointment_time->format('H:i'),
+                'start_time' => $a->start_time->format('H:i'),
                 'duration' => $a->duration,
                 'status' => $a->status,
             ]),
@@ -43,7 +43,7 @@ class DashboardController extends Controller
                 'id' => $inProgress->id,
                 'client_name' => $inProgress->client->name,
                 'service' => $inProgress->service,
-                'appointment_time' => $inProgress->appointment_time->format('H:i'),
+                'start_time' => $inProgress->start_time->format('H:i'),
                 'duration' => $inProgress->duration,
                 'status' => $inProgress->status,
             ] : null,
@@ -51,13 +51,13 @@ class DashboardController extends Controller
                 'id' => $nextAppointment->id,
                 'client_name' => $nextAppointment->client->name,
                 'service' => $nextAppointment->service,
-                'appointment_time' => $nextAppointment->appointment_time->format('H:i'),
+                'start_time' => $nextAppointment->start_time->format('H:i'),
                 'duration' => $nextAppointment->duration,
                 'status' => $nextAppointment->status,
             ] : null,
             'countToday' => $appointments->count(),
-            'countWeek' => Appointment::whereBetween('appointment_time', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-            'countMonth' => Appointment::whereMonth('appointment_time', now()->month)->count(),
+            'countWeek' => Appointment::whereBetween('start_time', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+            'countMonth' => Appointment::whereMonth('start_time', now()->month)->count(),
         ]);
     }
 }

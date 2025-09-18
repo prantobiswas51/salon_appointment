@@ -3,11 +3,19 @@ import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { Timer, CalendarDays } from 'lucide-react';
 
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import { RefreshCcw } from 'lucide-react';
+
+import { useEffect, useState } from "react";
+import axios from "axios";
+
 type Appointment = {
     id: number;
     client_name: string;
     service: string;
-    appointment_time: string;
+    start_time: string;
     duration: number;
     status: string;
 };
@@ -36,6 +44,15 @@ export default function Dashboard({
     countWeek,
     countMonth,
 }: Props) {
+    const [events, setEvents] = useState<any[]>([]);
+
+    // ---- Load Calendar Events ----
+    useEffect(() => {
+        axios.get("/calendar/events").then((res) => {
+            setEvents(res.data);
+        });
+    }, []);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -48,7 +65,7 @@ export default function Dashboard({
                         <h3 className='font-semibold flex'>{inProgress.client_name}</h3>
                         <h3>{inProgress.service}</h3>
                         <div className="flex justify-between items-center">
-                            <h3>Time : {inProgress.appointment_time}</h3>
+                            <h3>Time : {inProgress.start_time}</h3>
                             <span className='bg-green-200 px-2 p-1 rounded-2xl text-sm'>In progress</span>
                         </div>
                     </div>
@@ -60,7 +77,7 @@ export default function Dashboard({
                         <h3 className='font-semibold flex'>{nextAppointment.client_name}</h3>
                         <h3>{nextAppointment.service}</h3>
                         <div className="flex justify-between items-center">
-                            <h3>Time : {nextAppointment.appointment_time}</h3>
+                            <h3>Time : {nextAppointment.start_time}</h3>
                             <span className=' px-2 p-1 rounded-2xl text-sm'>Next</span>
                         </div>
                     </div>
@@ -95,7 +112,7 @@ export default function Dashboard({
                         <div className="flex justify-between">
                             <div className="font-bold text-gray-600 flex items-center">
                                 <Timer className='mr-1' />
-                                {app.appointment_time}
+                                {app.start_time}
                             </div>
                             <span
                                 className={`p-2 py-1 rounded-2xl md:ml-4 ${app.status === 'completed'
@@ -112,6 +129,25 @@ export default function Dashboard({
                         <div className="ml-2">{app.service}</div>
                     </div>
                 ))}
+            </div>
+
+            {/* Calendar */}
+            <div className="p-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold mb-4">Calendar</h2>
+                    <button onClick={() => window.location.reload()}
+                        className="px-3 py-1 bg-blue-500 flex  text-white rounded hover:bg-blue-600"
+                    > <RefreshCcw className="mr-2 w-4"/> Sync</button>
+                </div>
+                <FullCalendar
+                    plugins={[timeGridPlugin, interactionPlugin]}
+                    initialView="timeGridWeek"
+                    selectable={true}
+                    events={events}
+                    slotMinTime="09:00:00"
+                    slotMaxTime="17:00:00"
+                    height="auto"
+                />
             </div>
         </AppLayout>
     );

@@ -30,7 +30,7 @@ class ClientController extends Controller
             'new_client_phone' => 'nullable|string',
             'email' => 'nullable|email',
             'service' => 'required|in:Hair Cut,Beard Shaping,Other Services',
-            'appointment_time' => 'required|date',
+            'start_time' => 'required|date',
             'status' => 'required|in:Scheduled,Confirmed,Canceled',
             'notes' => 'nullable|string',
         ]);

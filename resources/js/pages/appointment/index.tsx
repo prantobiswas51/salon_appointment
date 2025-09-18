@@ -21,7 +21,7 @@ type Appointment = {
   service: string;
   duration: string;
   attendence_status: string; // keep your current API field name
-  appointment_time: string;
+  start_time: string;
   status: string;
   notes: string;
   reminder_sent: string;
@@ -90,7 +90,7 @@ export default function Index() {
         service: editing.service,
         duration: editing.duration,
         attendence_status: editing.attendence_status,
-        appointment_time: editing.appointment_time,
+        start_time: editing.start_time,
         status: editing.status,
         notes: editing.notes,
         // include client_id if your update endpoint expects it:
@@ -141,6 +141,7 @@ export default function Index() {
                 <th className="px-3 lg:px-6 py-3 border-b">Phone</th>
                 <th className="px-3 lg:px-6 py-3 border-b">Service</th>
                 <th className="px-3 lg:px-6 py-3 border-b">Time</th>
+                <th className="px-3 lg:px-6 py-3 border-b">Duration</th>
                 <th className="px-3 lg:px-6 py-3 border-b">Status</th>
                 <th className="px-3 lg:px-6 py-3 border-b">Reminder</th>
                 <th className="px-3 lg:px-6 py-3 border-b">Actions</th>
@@ -153,7 +154,8 @@ export default function Index() {
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.name}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.phone}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.service}</td>
-                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.appointment_time}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.start_time}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.duration} Minutes</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.status}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.reminder_sent}</td>
                   <td className="px-3 lg:px-6 py-4 border-b flex items-center">
@@ -164,8 +166,8 @@ export default function Index() {
                     <button
                       type="button"
                       className={`ml-3 ${deletingId === appointment.id
-                          ? 'opacity-50 cursor-not-allowed'
-                          : 'hover:cursor-pointer'
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:cursor-pointer'
                         }`}
                       onClick={() => deleteAppointment(appointment.id)}
                       disabled={deletingId === appointment.id}
@@ -203,7 +205,7 @@ export default function Index() {
                 </div>
                 <div className="flex justify-between mb-2">
                   <span className="text-gray-600 text-sm">Time</span>
-                  <span>{appointment.appointment_time}</span>
+                  <span>{appointment.start_time}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span className="text-gray-600 text-sm">Status</span>
@@ -222,8 +224,8 @@ export default function Index() {
                   <button
                     type="button"
                     className={`${deletingId === appointment.id
-                        ? 'opacity-50 cursor-not-allowed'
-                        : 'hover:cursor-pointer'
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:cursor-pointer'
                       }`}
                     onClick={() => deleteAppointment(appointment.id)}
                     disabled={deletingId === appointment.id}
@@ -235,7 +237,6 @@ export default function Index() {
             ))}
           </div>
         </div>
-
 
         {/* pagination */}
         <div className="flex flex-wrap justify-center mt-6 space-x-2">
@@ -285,13 +286,31 @@ export default function Index() {
                   />
                 </div>
 
+                
+
+                {/* editing */}
                 <div className="mb-4">
-                  <label className="block mb-2">Attendance Status</label>
+                  <label className="block mb-2">Appointment Start Time</label>
+                  <input
+                    type="datetime-local"
+                    className="border p-2 rounded-lg w-full dark:border-gray-300"
+                   value={editing.start_time ? new Date(editing.start_time).toISOString().slice(0, 16) : ""}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        start_time: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block mb-2">Status</label>
                   <select
                     className="border p-2 rounded-lg w-full dark:border-gray-300"
-                    value={editing.attendence_status}
+                    value={editing.status}
                     onChange={(e) =>
-                      setEditing({ ...editing, attendence_status: e.target.value })
+                      setEditing({ ...editing, status: e.target.value })
                     }
                   >
                     <option value="Confirmed">Confirmed</option>
@@ -301,30 +320,18 @@ export default function Index() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block mb-2">Appointment Time</label>
-                  <input
-                    type="datetime-local"
+                  <label className="block mb-2">Attendance Status</label>
+                  <select
                     className="border p-2 rounded-lg w-full dark:border-gray-300"
-                    value={editing.appointment_time}
+                    value={editing.attendence_status}
                     onChange={(e) =>
-                      setEditing({
-                        ...editing,
-                        appointment_time: e.target.value,
-                      })
+                      setEditing({ ...editing, attendence_status: e.target.value })
                     }
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block mb-2">Status</label>
-                  <input
-                    type="text"
-                    className="border p-2 rounded-lg w-full dark:border-gray-300"
-                    value={editing.status}
-                    onChange={(e) =>
-                      setEditing({ ...editing, status: e.target.value })
-                    }
-                  />
+                  >
+                    <option value="Green">Green</option>
+                    <option value="Red">Red</option>
+                    <option value="Yellow">Yellow</option>
+                  </select>
                 </div>
 
                 <div className="mb-4">
@@ -337,6 +344,8 @@ export default function Index() {
                     }
                   />
                 </div>
+
+                
 
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>

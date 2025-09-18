@@ -26,7 +26,7 @@ class SendWhatsAppMessage extends Command
         $this->info("Scanning appointments from {$start} to {$end}" . ($dryRun ? ' [DRY RUN]' : ''));
 
         Appointment::with('client')
-            ->whereBetween('appointment_time', [$start, $end])
+            ->whereBetween('start_time', [$start, $end])
             ->where('status', 'Scheduled')
             ->orderBy('id')
             ->chunkById(200, function ($appointments) use ($dryRun) {
@@ -38,8 +38,8 @@ class SendWhatsAppMessage extends Command
 
                     $to   = trim($client->phone);
                     $name = $client->name ?: 'Customer';
-                    $time = optional($appointment->appointment_time)
-                        ? $appointment->appointment_time->timezone('Asia/Dhaka')->format('h:i A')
+                    $time = optional($appointment->start_time)
+                        ? $appointment->start_time->timezone('Asia/Dhaka')->format('h:i A')
                         : null;
 
                     $template = Whatsapp::first()->message;
