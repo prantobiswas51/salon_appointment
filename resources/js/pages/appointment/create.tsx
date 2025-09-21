@@ -35,7 +35,11 @@ export default function CreateAppointment() {
     });
 
     const formatDateForInput = (date: Date) => {
-        return date.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:mm"
+        // "sv-SE" gives a sortable YYYY-MM-DD HH:mm:ss
+        return date
+            .toLocaleString("sv-SE", { timeZone: "Europe/Rome" })
+            .replace(" ", "T") // datetime-local expects T between date & time
+            .slice(0, 16);     // trim seconds
     };
 
     // ---- Load Calendar Events ----
@@ -44,7 +48,6 @@ export default function CreateAppointment() {
             setEvents(res.data);
         });
     }, []);
-
 
     // ---- When Slot is Selected ----
     const handleSelect = (info: any) => {
@@ -74,7 +77,7 @@ export default function CreateAppointment() {
                     <h2 className="text-xl font-bold mb-4">Calendar</h2>
                     <button onClick={() => window.location.reload()}
                         className="px-3 py-1 bg-blue-500 flex  text-white rounded hover:bg-blue-600"
-                    > <RefreshCcw className="mr-2 w-4"/> Sync</button>
+                    > <RefreshCcw className="mr-2 w-4" /> Sync</button>
                 </div>
                 <FullCalendar
                     plugins={[timeGridPlugin, interactionPlugin]}

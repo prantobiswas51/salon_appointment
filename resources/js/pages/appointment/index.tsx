@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { FilePen, Search, Trash } from 'lucide-react';
+import { FilePen, Search, Trash, TimerReset } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Appointment', href: '/appointment' },
@@ -46,6 +46,27 @@ export default function Index() {
     // shallow copy so we can edit fields
     setEditing({ ...appt });
     setIsModalOpen(true);
+  };
+
+  const sendReminder = (id: number): void => {
+    if (!window.confirm('Are you sure you want to delete this appointment?')) return;
+
+    setDeletingId(id);
+
+    // If you have Ziggy: route('appointments.destroy', id)
+    router.delete(`/appointment/delete/${id}`, {
+      preserveScroll: true,
+      onFinish: () => setDeletingId(null),
+      onError: (errors) => {
+        // eslint-disable-next-line no-console
+        console.error(errors);
+        window.alert('Failed to delete appointment.');
+      },
+      onSuccess: () => {
+        // Reload just the appointments prop (works across Inertia versions)
+        router.visit(window.location.href, { only: ['appointments'], preserveScroll: true });
+      },
+    });
   };
 
   const closeEdit = (): void => {
@@ -159,10 +180,26 @@ export default function Index() {
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.status}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.reminder_sent}</td>
                   <td className="px-3 lg:px-6 py-4 border-b flex items-center">
-                    <FilePen
+
+                    {/* <button
+                      type="button"
+                      className={`ml-3 ${deletingId === appointment.id
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:cursor-pointer'
+                        }`}
+                      onClick={() => sendReminder(appointment.id)}
+                      disabled={deletingId === appointment.id}
+                    >
+                      <TimerReset
                       className="text-amber-500 hover:text-amber-600 hover:cursor-pointer"
+                    />
+                    </button> */}
+
+                    <FilePen
+                      className="text-amber-500 hover:text-amber-600 ml-2 hover:cursor-pointer"
                       onClick={() => openEdit(appointment)}
                     />
+
                     <button
                       type="button"
                       className={`ml-3 ${deletingId === appointment.id
@@ -217,6 +254,7 @@ export default function Index() {
                 </div>
 
                 <div className="flex justify-end mt-3">
+
                   <FilePen
                     className="text-amber-500 hover:text-amber-600 hover:cursor-pointer mr-3"
                     onClick={() => openEdit(appointment)}
@@ -286,15 +324,19 @@ export default function Index() {
                   />
                 </div>
 
-                
-
                 {/* editing */}
                 <div className="mb-4">
                   <label className="block mb-2">Appointment Start Time</label>
                   <input
                     type="datetime-local"
                     className="border p-2 rounded-lg w-full dark:border-gray-300"
-                   value={editing.start_time ? new Date(editing.start_time).toISOString().slice(0, 16) : ""}
+                    value={
+                      editing.start_time
+                        ? new Date(editing.start_time)
+                          .toLocaleString("sv-SE", { timeZone: "Europe/Rome" })
+                          .slice(0, 16) // "YYYY-MM-DDTHH:mm"
+                        : ""
+                    }
                     onChange={(e) =>
                       setEditing({
                         ...editing,
@@ -302,6 +344,7 @@ export default function Index() {
                       })
                     }
                   />
+
                 </div>
 
                 <div className="mb-4">
@@ -345,7 +388,7 @@ export default function Index() {
                   />
                 </div>
 
-                
+
 
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>

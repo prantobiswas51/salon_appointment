@@ -7,6 +7,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* in your global.css or app.css */
+.fc .fc-toolbar {
+    @apply bg-amber-600 text-white rounded-t-lg;
+}
+
+.fc .fc-toolbar-title {
+    @apply text-lg font-bold;
+}
+
+.fc-scrollgrid-sync-inner {
+    @apply bg-amber-600;
+}
+
+.fc .fc-button {
+    @apply bg-white text-pink-600 border-pink-600 hover:bg-pink-100;
+}
+
+
 @theme {
     --font-sans:
         'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';

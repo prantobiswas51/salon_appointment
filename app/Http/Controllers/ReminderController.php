@@ -15,12 +15,12 @@ class ReminderController extends Controller
 
     public function sendAppointmentReminders()
     {
-        // Define the window for tomorrow (in local time, e.g., Asia/Dhaka)
-        $tz = 'Asia/Dhaka';
+        $tz = 'Europe/Rome';
+
         $tomorrowStart = Carbon::now($tz)->addDay()->startOfDay();
         $tomorrowEnd = Carbon::now($tz)->addDay()->endOfDay();
 
-        $appointments = Appointment::with('client') // eager load client data
+        $appointments = Appointment::with('client')
             ->whereBetween('start_time', [$tomorrowStart, $tomorrowEnd])
             ->where('reminder_sent', false)
             ->get();
@@ -30,7 +30,6 @@ class ReminderController extends Controller
             $clientName = $appointment->client->name;
             $appointmentTime = Carbon::parse($appointment->start_time)->format('h:i A');
 
-            // Prepare the message components (assuming you are using a template)
             $components = [
                 [
                     'type' => 'body',
@@ -64,6 +63,8 @@ class ReminderController extends Controller
                 $response = Http::withToken('EAAKbuv0cwRcBPMU3gCIKKMODGoQKV2kyaf1GAlRfnAGIoAlVuK85KEbq3FzYaeDHcG7b04L4kvMstyzBeWiJUvf2tSBzkL7iSpCqGkq1XAkLlSZBHD4Tbw8ScHvPBhcm8i9dDjXHsMQy3M9FFlUuAjxaBSjE83ZAUPlyfW7Y2ofc2KgNGlpGZBJnVwWsyIg82q2MaJZBPbltvtJ0xoEuQwSRLBSVMyyWFviCXMZAgMaoZD')
                     ->asJson()
                     ->post($url, $payload);
+
+                
 
                 if ($response->failed()) {
                     throw new \Exception('WhatsApp send failed: ' . $response->status());

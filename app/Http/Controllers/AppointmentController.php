@@ -23,6 +23,7 @@ class AppointmentController extends Controller
             ->orderByDesc('created_at')
             ->paginate(10);
 
+
         return Inertia::render('appointment/index', [
             'appointments' => $appointments,
         ]);
@@ -46,7 +47,6 @@ class AppointmentController extends Controller
 
         return response()->json($events);
     }
-
 
     public function create()
     {
