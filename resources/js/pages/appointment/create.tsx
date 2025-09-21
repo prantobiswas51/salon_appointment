@@ -88,13 +88,23 @@ export default function CreateAppointment() {
                     slotMinTime="09:00:00"
                     slotMaxTime="17:00:00"
                     height="auto"
+                    slotLabelFormat={{
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false, // 👈 disable AM/PM
+                    }}
+                    eventTimeFormat={{
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false, // 👈 disable AM/PM
+                    }}
                 />
             </div>
 
             {/* Popup Modal with Form + Tabs */}
-            <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
+            <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50 ">
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-                    <div className="bg-white p-6 rounded shadow w-full max-w-lg">
+                    <div className="dark:bg-gray-900 p-6 rounded shadow w-full max-w-lg">
                         <h3 className="text-lg font-bold mb-4">Book Appointment</h3>
 
                         {/* Tabs */}
@@ -211,7 +221,7 @@ export default function CreateAppointment() {
                                 <select
                                     value={data.service}
                                     onChange={(e) => setData("service", e.target.value)}
-                                    className="w-full border p-2 rounded"
+                                    className="w-full border p-2 rounded dark:bg-gray-900"
                                 >
                                     <option value="">Select</option>
                                     <option value="Hair Cut">Hair Cut</option>
@@ -254,7 +264,7 @@ export default function CreateAppointment() {
                                 <select
                                     value={data.status}
                                     onChange={(e) => setData("status", e.target.value)}
-                                    className="w-full border p-2 rounded"
+                                    className="w-full border p-2 rounded dark:bg-gray-900"
                                 >
                                     <option value="Scheduled">Scheduled</option>
                                     <option value="Confirmed">Confirmed</option>
@@ -277,7 +287,7 @@ export default function CreateAppointment() {
                             <div className="flex justify-end gap-2">
                                 <button
                                     type="button"
-                                    className="px-4 py-2 bg-gray-300 rounded"
+                                    className="px-4 py-2 bg-gray-300 rounded hover:cursor-pointer dark:text-gray-900"
                                     onClick={() => setIsOpen(false)}
                                 >
                                     Cancel

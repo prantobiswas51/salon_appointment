@@ -137,7 +137,7 @@ export default function Dashboard({
                     <h2 className="text-xl font-bold mb-4">Calendar</h2>
                     <button onClick={() => window.location.reload()}
                         className="px-3 py-1 bg-blue-500 flex  text-white rounded hover:bg-blue-600"
-                    > <RefreshCcw className="mr-2 w-4"/> Sync</button>
+                    > <RefreshCcw className="mr-2 w-4" /> Sync</button>
                 </div>
                 <FullCalendar
                     plugins={[timeGridPlugin, interactionPlugin]}
@@ -147,6 +147,17 @@ export default function Dashboard({
                     slotMinTime="09:00:00"
                     slotMaxTime="17:00:00"
                     height="auto"
+
+                    slotLabelFormat={{
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false, // 👈 disable AM/PM
+                    }}
+                    eventTimeFormat={{
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false, // 👈 disable AM/PM
+                    }}
                 />
             </div>
         </AppLayout>

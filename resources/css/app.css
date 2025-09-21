@@ -16,13 +16,15 @@
     @apply text-lg font-bold;
 }
 
-.fc-scrollgrid-sync-inner {
-    @apply bg-amber-600;
+.fc-scroller-harness {
+    @apply rounded-lg bg-pink-500/60;
 }
 
 .fc .fc-button {
     @apply bg-white text-pink-600 border-pink-600 hover:bg-pink-100;
 }
+
+
 
 
 @theme {
