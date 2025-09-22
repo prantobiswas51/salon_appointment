@@ -6,7 +6,9 @@ use Carbon\Carbon;
 use Inertia\Inertia;
 use App\Models\Reminder;
 use App\Models\Whatsapp;
+use App\Models\Appointment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
@@ -32,5 +34,82 @@ class WhatsappController extends Controller
         $whatsapp->update(request()->only('message', 'token', 'number_id'));
 
         return redirect()->back()->with('success', 'Whatsapp updated!');
+    }
+
+    public function manual_message(Request $request)
+    {
+        try {
+            // Find appointment with client relation
+            $booking = Appointment::with('client')->findOrFail($request->id);
+
+            if (!$booking->client) {
+                Log::warning('WhatsApp send failed - no client found', [
+                    'appointment_id' => $booking->id,
+                ]);
+                return false;
+            }
+
+            $client        = $booking->client;
+            $client_number = $client->phone;
+            $client_name   = $client->name;
+
+            // Format appointment time (adjust format as needed)
+            $appointment_time = $booking->scheduled_at
+                ? \Carbon\Carbon::parse($booking->scheduled_at)->format('d M Y, h:i A')
+                : '';
+
+            // Get WhatsApp config
+            $whatsapp = Whatsapp::firstOrFail();
+            $token    = $whatsapp->token;
+            $phoneId  = $whatsapp->number_id;
+
+            // Replace placeholders {$name} and {$time}
+            $messageTemplate = $whatsapp->message ?? "Hello {$client_name}, this is a reminder.";
+            $message = str_replace(
+                ['{$name}', '{$time}'],
+                [$client_name, $appointment_time],
+                $messageTemplate
+            );
+
+            $url = "https://graph.facebook.com/v22.0/{$phoneId}/messages";
+
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'to'   => $client_number,
+                'type' => 'text',
+                'text' => ['body' => $message],
+            ];
+
+            $resp = Http::withToken($token)
+                ->acceptJson()
+                ->withoutVerifying()
+                ->post($url, $payload);
+
+            if ($resp->successful()) {
+                Log::info('WhatsApp message sent', [
+                    'appointment_id' => $booking->id,
+                    'to'             => $client_number,
+                    'client'         => $client_name,
+                    'message'        => $message,
+                ]);
+                return redirect()->back()->with('success', 'Reminder Sent!');
+            }
+
+            // Log failure details
+            Log::warning('WhatsApp send failed', [
+                'appointment_id' => $booking->id,
+                'status'         => $resp->status(),
+                'response'       => $resp->json(),
+                'to'             => $client_number,
+            ]);
+
+            return false;
+        } catch (\Throwable $e) {
+            Log::error('WhatsApp send exception', [
+                'error'          => $e->getMessage(),
+                'appointment_id' => $request->id,
+            ]);
+            return false;
+        }
     }
 }

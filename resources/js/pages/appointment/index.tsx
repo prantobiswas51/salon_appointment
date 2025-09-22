@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { FilePen, Search, Trash, TimerReset } from 'lucide-react';
 
+
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Appointment', href: '/appointment' },
 ];
@@ -28,6 +29,16 @@ type Appointment = {
   client: Client;
 };
 
+type FlashProps = {
+  success?: string;
+  error?: string;
+};
+
+type PageProps = {
+  flash: FlashProps;
+  appointments: any; // adjust type as needed
+};
+
 type Paginated<T> = {
   data: T[];
   links: { url: string | null; label: string; active: boolean }[];
@@ -35,12 +46,15 @@ type Paginated<T> = {
 
 export default function Index() {
   const { appointments } = usePage<{ appointments: Paginated<Appointment> }>().props;
+  const { flash } = usePage<PageProps>().props;
 
   // edit modal state
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [reminderId, setReminderId] = useState<number | null>(null);
+
 
   const openEdit = (appt: Appointment): void => {
     // shallow copy so we can edit fields
@@ -49,25 +63,26 @@ export default function Index() {
   };
 
   const sendReminder = (id: number): void => {
-    if (!window.confirm('Are you sure you want to delete this appointment?')) return;
+    if (!window.confirm('Send Reminder?')) return;
 
-    setDeletingId(id);
+    setReminderId(id);
 
-    // If you have Ziggy: route('appointments.destroy', id)
-    router.delete(`/appointment/delete/${id}`, {
-      preserveScroll: true,
-      onFinish: () => setDeletingId(null),
-      onError: (errors) => {
-        // eslint-disable-next-line no-console
-        console.error(errors);
-        window.alert('Failed to delete appointment.');
-      },
-      onSuccess: () => {
-        // Reload just the appointments prop (works across Inertia versions)
-        router.visit(window.location.href, { only: ['appointments'], preserveScroll: true });
-      },
-    });
+    router.post(
+      `/whatsapp/manual/${id}`,
+      { id }, // no form data to send, so just an empty object
+      {
+        preserveScroll: true,
+        onFinish: () => setReminderId(null),
+        onError: (errors) => {
+          console.error(errors);
+          window.alert('Failed to send reminder.');
+        },
+        onSuccess: (page) => {
+        },
+      }
+    );
   };
+
 
   const closeEdit = (): void => {
     setIsModalOpen(false);
@@ -133,6 +148,22 @@ export default function Index() {
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Appointment" />
+
+      <div>
+        {flash.success && (
+          <div className="mb-4 rounded bg-green-100 text-green-700 p-3">
+            {flash.success}
+          </div>
+        )}
+        {flash.error && (
+          <div className="mb-4 rounded bg-red-100 text-red-700 p-3">
+            {flash.error}
+          </div>
+        )}
+
+        {/* your appointments table */}
+      </div>
+
       <div className="p-2 m-4">
         <h1 className="text-2xl font-bold mb-4">Scheduled Appointments</h1>
 
@@ -170,7 +201,7 @@ export default function Index() {
             </thead>
             <tbody>
               {appointments.data.map((appointment) => (
-                <tr key={appointment.id} className="hover:bg-gray-50 transition">
+                <tr key={appointment.id} className="hover:dark:bg-gray-900 hover:bg-gray-200 transition">
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.id}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.name}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.phone}</td>
@@ -181,19 +212,19 @@ export default function Index() {
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.reminder_sent}</td>
                   <td className="px-3 lg:px-6 py-4 border-b flex items-center">
 
-                    {/* <button
+                    <button
                       type="button"
-                      className={`ml-3 ${deletingId === appointment.id
+                      className={`ml-3 ${reminderId === appointment.id
                         ? 'opacity-50 cursor-not-allowed'
                         : 'hover:cursor-pointer'
                         }`}
                       onClick={() => sendReminder(appointment.id)}
-                      disabled={deletingId === appointment.id}
+                      disabled={reminderId === appointment.id}
                     >
                       <TimerReset
-                      className="text-amber-500 hover:text-amber-600 hover:cursor-pointer"
-                    />
-                    </button> */}
+                        className="text-amber-500 hover:text-amber-600 hover:cursor-pointer"
+                      />
+                    </button>
 
                     <FilePen
                       className="text-amber-500 hover:text-amber-600 ml-2 hover:cursor-pointer"
@@ -255,8 +286,21 @@ export default function Index() {
 
                 <div className="flex justify-end mt-3">
 
+                  <button
+                    type="button"
+                    className={`ml-3 ${reminderId === appointment.id
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:cursor-pointer'
+                      }`}
+                    onClick={() => sendReminder(appointment.id)}
+                    disabled={reminderId === appointment.id}
+                  >
+                    <TimerReset
+                      className="text-amber-500 hover:text-amber-600 hover:cursor-pointer"
+                    />
+                  </button>
                   <FilePen
-                    className="text-amber-500 hover:text-amber-600 hover:cursor-pointer mr-3"
+                    className="text-amber-500 hover:text-amber-600 ml-2 hover:cursor-pointer mr-3"
                     onClick={() => openEdit(appointment)}
                   />
                   <button

@@ -48,6 +48,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/whatsapp', [WhatsappController::class, 'index'])->name('whatsapp.index');
     Route::put('/whatsapp/{whatsapp}', [WhatsappController::class, 'update'])->name('whatsapp.update');
+    Route::post('/whatsapp/manual/{id}', [WhatsappController::class, 'manual_message'])->name('whatsapp_manual');
 });
 
 Route::get('/calendar/freebusy', function () {
