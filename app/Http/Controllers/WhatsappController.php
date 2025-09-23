@@ -54,9 +54,8 @@ class WhatsappController extends Controller
             $client_name   = $client->name;
 
             // Format appointment time (adjust format as needed)
-            $appointment_time = $booking->scheduled_at
-                ? \Carbon\Carbon::parse($booking->scheduled_at)->format('d M Y, h:i A')
-                : '';
+            $appointment_time = $booking->start_time ? Carbon::parse($booking->start_time)->format('d M Y, h:i A')
+                : '0:00';
 
             // Get WhatsApp config
             $whatsapp = Whatsapp::firstOrFail();
@@ -64,11 +63,10 @@ class WhatsappController extends Controller
             $phoneId  = $whatsapp->number_id;
 
             // Replace placeholders {$name} and {$time}
-            $messageTemplate = $whatsapp->message ?? "Hello {$client_name}, this is a reminder.";
+            $messageTemplate = $whatsapp->message;
             $message = str_replace(
                 ['{$name}', '{$time}'],
-                [$client_name, $appointment_time],
-                $messageTemplate
+                [$client_name, $appointment_time], $messageTemplate
             );
 
             $url = "https://graph.facebook.com/v22.0/{$phoneId}/messages";
