@@ -194,6 +194,11 @@ export default function Dashboard({
                     select={handleSelect}
                     slotMinTime="09:00:00"
                     slotMaxTime="23:00:00"
+                    dateClick={(info) => {
+                        // treat tap like a slot selection
+                        setData("start_time", formatDateForInput(info.date));
+                        setIsOpen(true);
+                    }}
                     height="auto"
                     slotLabelFormat={{
                         hour: "2-digit",
@@ -212,7 +217,7 @@ export default function Dashboard({
             {/* Popup Modal with Form + Tabs */}
             <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-                    <div className="dark:bg-gray-900 p-6 rounded shadow w-full max-w-lg">
+                    <div className="dark:bg-gray-900 p-6 rounded shadow w-full max-w-lg bg-gray-300">
                         <h3 className="text-lg font-bold mb-4">Book Appointment</h3>
 
                         {/* Tabs */}

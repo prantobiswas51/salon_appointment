@@ -85,6 +85,11 @@ export default function CreateAppointment() {
                     selectable={true}
                     events={events}
                     select={handleSelect}
+                    dateClick={(info) => {
+                        // treat tap like a slot selection
+                        setData("start_time", formatDateForInput(info.date));
+                        setIsOpen(true);
+                    }}
                     slotMinTime="09:00:00"
                     slotMaxTime="23:00:00"
                     height="auto"
