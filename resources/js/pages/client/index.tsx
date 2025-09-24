@@ -149,7 +149,7 @@ export default function Index() {
                                 <div>
                                     <label className="block mb-2">Name</label>
                                     <input
-                                        type="text"
+                                        type="text" required
                                         className="border p-2 rounded-md w-full dark:border-gray-100"
                                         value={editingClient.name}
                                         onChange={(e) =>
@@ -188,7 +188,7 @@ export default function Index() {
                                 <div>
                                     <label className="block mb-2">Phone</label>
                                     <input
-                                        type="text"
+                                        type="text" required
                                         className="border p-2 rounded-md w-full dark:border-gray-100"
                                         value={editingClient.phone}
                                         onChange={(e) =>
@@ -202,7 +202,7 @@ export default function Index() {
                                     <label className="block mb-2">Status</label>
                                     <select
                                         className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.status || ""}
+                                        value={editingClient.status || ""} 
                                         onChange={(e) =>
                                             setEditingClient({ ...editingClient, status: e.target.value })
                                         }

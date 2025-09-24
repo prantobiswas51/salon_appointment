@@ -53,8 +53,9 @@ class WhatsappController extends Controller
             $client_number = $client->phone;
             $client_name   = $client->name;
 
-            // Format appointment time (adjust format as needed)
-            $appointment_time = $booking->start_time ? Carbon::parse($booking->start_time)->format('d M Y, h:i A')
+            // Format appointment time
+            $appointment_time = $booking->start_time
+                ? Carbon::parse($booking->start_time)->format('d M Y, h:i A')
                 : '0:00';
 
             // Get WhatsApp config
@@ -62,20 +63,26 @@ class WhatsappController extends Controller
             $token    = $whatsapp->token;
             $phoneId  = $whatsapp->number_id;
 
-            // Replace placeholders {$name} and {$time}
-            $messageTemplate = $whatsapp->message;
-            $message = str_replace(
-                ['{$name}', '{$time}'],
-                [$client_name, $appointment_time], $messageTemplate
-            );
-
             $url = "https://graph.facebook.com/v22.0/{$phoneId}/messages";
 
+            // WhatsApp Template Payload
             $payload = [
                 'messaging_product' => 'whatsapp',
                 'to'   => $client_number,
-                'type' => 'text',
-                'text' => ['body' => $message],
+                'type' => 'template',
+                'template' => [
+                    'name'     => 'appointment_reminder', // template name in WABA
+                    'language' => ['code' => 'it'],     // Italian template
+                    'components' => [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                ['type' => 'text', 'text' => $client_name],
+                                ['type' => 'text', 'text' => $appointment_time],
+                            ],
+                        ],
+                    ],
+                ],
             ];
 
             $resp = Http::withToken($token)
@@ -84,11 +91,11 @@ class WhatsappController extends Controller
                 ->post($url, $payload);
 
             if ($resp->successful()) {
-                Log::info('WhatsApp message sent', [
+                Log::info('WhatsApp template message sent', [
                     'appointment_id' => $booking->id,
                     'to'             => $client_number,
                     'client'         => $client_name,
-                    'message'        => $message,
+                    'template'       => 'appointment_reminder',
                 ]);
                 return redirect()->back()->with('success', 'Reminder Sent!');
             }

@@ -86,7 +86,7 @@ export default function CreateAppointment() {
                     events={events}
                     select={handleSelect}
                     slotMinTime="09:00:00"
-                    slotMaxTime="17:00:00"
+                    slotMaxTime="23:00:00"
                     height="auto"
                     slotLabelFormat={{
                         hour: "2-digit",
@@ -103,8 +103,8 @@ export default function CreateAppointment() {
 
             {/* Popup Modal with Form + Tabs */}
             <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50 ">
-                <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-                    <div className="dark:bg-gray-900 p-6 rounded shadow w-full max-w-lg">
+                <div className="fixed inset-0 flex items-center justify-center bg-black/50 ">
+                    <div className="dark:bg-gray-900 p-6 rounded shadow w-full max-w-lg bg-gray-300">
                         <h3 className="text-lg font-bold mb-4">Book Appointment</h3>
 
                         {/* Tabs */}
@@ -158,12 +158,12 @@ export default function CreateAppointment() {
                         </div>
 
                         {/* FORM */}
-                        <form onSubmit={submit} className="space-y-4">
+                        <form onSubmit={submit} className="space-y-4 ">
                             {activeTab === "existing" ? (
                                 <div>
                                     <label className="block mb-1">Client Number</label>
                                     <input
-                                        type="text"
+                                        type="text" required
                                         placeholder="e.g. +1 848 648 8448"
                                         className="w-full border p-2 rounded"
                                         value={data.client_number}
@@ -178,7 +178,7 @@ export default function CreateAppointment() {
                                     <div>
                                         <label className="block mb-1">Client Name</label>
                                         <input
-                                            type="text"
+                                            type="text" required
                                             className="w-full border p-2 rounded"
                                             placeholder="e.g. John"
                                             value={data.new_client_name}
@@ -191,7 +191,7 @@ export default function CreateAppointment() {
                                     <div>
                                         <label className="block mb-1">Client Phone</label>
                                         <input
-                                            type="tel"
+                                            type="tel" required
                                             className="w-full border p-2 rounded"
                                             placeholder="e.g. +2 485 485 744"
                                             value={data.new_client_phone}
