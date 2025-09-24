@@ -41,6 +41,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/appointment/store', [AppointmentController::class, 'store'])->name('appointment.store');
     Route::put('/appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointment.update');
     Route::delete('/appointment/delete/{appointment}', [AppointmentController::class, 'destroy'])->name('appointment.delete');
+    Route::post('/appointment/update-time', [AppointmentController::class, 'updateTime']);
+
 
     Route::get('/clients', [ClientController::class, 'index'])->name('client.index');
     Route::get('/client/create', [ClientController::class, 'create'])->name('client.create');
@@ -57,7 +59,7 @@ Route::get('/calendar/freebusy', function () {
     $client->addScope(Calendar::CALENDAR);
 
     // 👇 impersonate the calendar owner
-    $client->setSubject("bongomaker@future-abacus-471518-g0.iam.gserviceaccount.com");
+    $client->setSubject("whatsapp-salonipro@velvety-rookery-473117-v9.iam.gserviceaccount.com");
 
     $service = new Calendar($client);
 

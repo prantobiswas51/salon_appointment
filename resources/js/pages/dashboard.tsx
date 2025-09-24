@@ -184,6 +184,7 @@ export default function Dashboard({
                         <RefreshCcw className="mr-2 w-4" /> Sync
                     </button>
                 </div>
+                
                 <FullCalendar
                     plugins={[timeGridPlugin, interactionPlugin]}
                     initialView="timeGridWeek"
@@ -194,12 +195,8 @@ export default function Dashboard({
                     select={handleSelect}
                     slotMinTime="09:00:00"
                     slotMaxTime="23:00:00"
-                    dateClick={(info) => {
-                        // treat tap like a slot selection
-                        setData("start_time", formatDateForInput(info.date));
-                        setIsOpen(true);
-                    }}
                     height="auto"
+                    selectLongPressDelay={200} // 👈 required for mobile drag select
                     slotLabelFormat={{
                         hour: "2-digit",
                         minute: "2-digit",
@@ -211,6 +208,7 @@ export default function Dashboard({
                         hour12: false,
                     }}
                 />
+
 
             </div>
 

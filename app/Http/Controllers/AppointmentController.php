@@ -153,4 +153,20 @@ class AppointmentController extends Controller
             ->back()
             ->with('success', 'Appointment deleted successfully.');
     }
+
+    public function updateTime(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:appointments,id',
+            'start_time' => 'required|date',
+            'duration' => 'required|integer|min:1',
+        ]);
+
+        $appointment = Appointment::findOrFail($request->id);
+        $appointment->start_time = $request->start_time;
+        $appointment->duration = $request->duration;
+        $appointment->save();
+
+        return response()->json(['success' => true]);
+    }
 }
