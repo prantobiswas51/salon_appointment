@@ -17,6 +17,10 @@ export default function CreateAppointment() {
     const [events, setEvents] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<"existing" | "new">("new");
+    
+    const handleSync = () => {
+        router.get(route("sync")); // or router.get(route("sync")) depending on your backend route
+    };
 
     const page = usePage();
     const flash = page.props?.flash || {};
@@ -41,13 +45,6 @@ export default function CreateAppointment() {
             .replace(" ", "T") // datetime-local expects T between date & time
             .slice(0, 16);     // trim seconds
     };
-
-    // ---- Load Calendar Events ----
-    useEffect(() => {
-        axios.get("/calendar/events").then((res) => {
-            setEvents(res.data);
-        });
-    }, []);
 
     // ---- When Slot is Selected ----
     const handleSelect = (info: any) => {
@@ -75,9 +72,12 @@ export default function CreateAppointment() {
             <div className="p-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold mb-4">Calendar</h2>
-                    <button onClick={() => window.location.reload()}
-                        className="px-3 py-1 bg-blue-500 flex  text-white rounded hover:bg-blue-600"
-                    > <RefreshCcw className="mr-2 w-4" /> Sync</button>
+                    <button
+                        onClick={handleSync}
+                        className="px-3 py-1 bg-blue-500 flex items-center text-white rounded hover:bg-blue-600"
+                    >
+                        <RefreshCcw className="mr-2 w-4" /> Sync
+                    </button>
                 </div>
                 <FullCalendar
                     plugins={[timeGridPlugin, interactionPlugin]}

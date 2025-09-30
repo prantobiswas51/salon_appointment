@@ -20,7 +20,7 @@ class Appointment extends Model
     ];
 
     protected $casts = [
-        'start_time' => 'datetime', // ensures start_time is a Carbon instance
+        'start_time' => 'datetime',
     ];
 
     public function client()

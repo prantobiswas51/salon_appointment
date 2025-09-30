@@ -18,10 +18,13 @@ type Client = {
 
 type Appointment = {
   id: number;
+
   client_id: number;
+
   service: string;
   duration: string;
-  attendence_status: string; // keep your current API field name
+  event_id: string;
+  attendence_status: string;
   start_time: string;
   status: string;
   notes: string;
@@ -128,9 +131,14 @@ export default function Index() {
         attendence_status: editing.attendence_status,
         start_time: editing.start_time,
         status: editing.status,
+        event_id: editing.event_id,
         notes: editing.notes,
-        // include client_id if your update endpoint expects it:
+
+        // client info
         client_id: editing.client_id,
+        client_name: editing.client?.name,
+        client_phone: editing.client?.phone,
+        client_email: editing.client?.email,
       },
       {
         preserveScroll: true,
@@ -206,7 +214,7 @@ export default function Index() {
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.name}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.phone}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.service}</td>
-                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.start_time}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{new Date(appointment.start_time).toLocaleString()}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.duration} Minutes</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.status}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.reminder_sent}</td>
@@ -340,33 +348,94 @@ export default function Index() {
 
         {/* edit modal */}
         {isModalOpen && editing && (
-          <div className="fixed inset-0 bg-gray-700/20 flex justify-center items-center p-4">
-            <div className="bg-sky-100 dark:bg-gray-800 dark:border-gray-100 w-full max-w-[95%] sm:max-w-[30rem] p-6 rounded-lg shadow-lg">
+          <div className="fixed inset-0 z-[9999] bg-gray-700/20 flex justify-center items-center p-4">
+            <div className="bg-sky-100 dark:bg-gray-800 dark:border-gray-100 w-full max-w-[95%] sm:max-w-[30rem] rounded-lg shadow-lg 
+                  max-h-[90vh] overflow-y-auto p-6">
               <h2 className="text-xl font-bold mb-4">Edit Appointment</h2>
+
               <form onSubmit={handleUpdate}>
-                <div className="mb-4">
-                  <label className="block mb-2">Service</label>
-                  <input
-                    type="text"
-                    className="border p-2 rounded-lg w-full dark:border-gray-300"
-                    value={editing.service}
-                    onChange={(e) =>
-                      setEditing({ ...editing, service: e.target.value })
-                    }
-                  />
+
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="font-medium text-gray-700 ">Client</div>
+
+                    <div className="mt-1">
+                      <input
+                        type="text" // should be text, not number
+                        className="border p-2 rounded-lg w-full dark:border-gray-300"
+                        required
+                        value={editing.client?.name || ""}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing,
+                            client: {
+                              ...editing.client,
+                              name: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-700">Phone</div>
+                    <div className="mt-1">
+                      <input
+                        type="text" // should be text, not number
+                        required
+                        className="border p-2 rounded-lg w-full dark:border-gray-300"
+                        value={editing.client?.phone || ""}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing,
+                            client: {
+                              ...editing.client,
+                              phone: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block mb-2">Duration</label>
-                  <input
-                    type="number"
-                    className="border p-2 rounded-lg w-full dark:border-gray-300"
-                    value={editing.duration}
-                    onChange={(e) =>
-                      setEditing({ ...editing, duration: e.target.value })
-                    }
-                  />
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="mb-4">
+                    <label className="block mb-2">Service</label>
+                    <input
+                      type="text"
+                      className="border p-2 rounded-lg w-full dark:border-gray-300"
+                      value={editing.service}
+                      onChange={(e) =>
+                        setEditing({ ...editing, service: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block mb-2">Duration</label>
+                    <input
+                      type="number"
+                      className="border p-2 rounded-lg w-full dark:border-gray-300"
+                      value={editing.duration}
+                      onChange={(e) =>
+                        setEditing({ ...editing, duration: e.target.value })
+                      }
+                    />
+                  </div>
                 </div>
+
+                {/* hidden event id */}
+                <input
+                  type="hidden"
+                  className="border p-2 rounded-lg w-full dark:border-gray-300"
+                  value={editing.event_id}
+                  onChange={(e) =>
+                    setEditing({ ...editing, event_id: e.target.value })
+                  }
+                />
+
 
                 {/* editing */}
                 <div className="mb-4">
@@ -391,34 +460,36 @@ export default function Index() {
 
                 </div>
 
-                <div className="mb-4">
-                  <label className="block mb-2">Status</label>
-                  <select
-                    className="border p-2 rounded-lg w-full dark:border-gray-300"
-                    value={editing.status}
-                    onChange={(e) =>
-                      setEditing({ ...editing, status: e.target.value })
-                    }
-                  >
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Canceled">Canceled</option>
-                    <option value="Scheduled">Scheduled</option>
-                  </select>
-                </div>
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="mb-4">
+                    <label className="block mb-2">Status</label>
+                    <select
+                      className="border p-2 rounded-lg w-full dark:border-gray-300"
+                      value={editing.status}
+                      onChange={(e) =>
+                        setEditing({ ...editing, status: e.target.value })
+                      }
+                    >
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Canceled">Canceled</option>
+                      <option value="Scheduled">Scheduled</option>
+                    </select>
+                  </div>
 
-                <div className="mb-4">
-                  <label className="block mb-2">Attendance Status</label>
-                  <select
-                    className="border p-2 rounded-lg w-full dark:border-gray-300"
-                    value={editing.attendence_status}
-                    onChange={(e) =>
-                      setEditing({ ...editing, attendence_status: e.target.value })
-                    }
-                  >
-                    <option value="Green">Green</option>
-                    <option value="Red">Red</option>
-                    <option value="Yellow">Yellow</option>
-                  </select>
+                  <div className="mb-4">
+                    <label className="block mb-2">Attendance Status</label>
+                    <select
+                      className="border p-2 rounded-lg w-full dark:border-gray-300"
+                      value={editing.attendence_status}
+                      onChange={(e) =>
+                        setEditing({ ...editing, attendence_status: e.target.value })
+                      }
+                    >
+                      <option value="Green">Green</option>
+                      <option value="Red">Red</option>
+                      <option value="Yellow">Yellow</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="mb-4">
@@ -434,21 +505,12 @@ export default function Index() {
 
 
 
-                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="font-medium text-gray-700 ">Client</div>
-                    <div className="mt-1 ">{editing.client?.name}</div>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-700">Phone</div>
-                    <div className="mt-1">{editing.client?.phone}</div>
-                  </div>
-                </div>
+
 
                 <div className="flex justify-end flex-wrap">
                   <button
                     type="button"
-                    className="mr-2 mb-2 border px-4 py-2 rounded-lg text-gray-600"
+                    className="mr-2 mb-2 border px-4 py-2 rounded-lg text-gray-600 hover:cursor-pointer"
                     onClick={closeEdit}
                     disabled={submitting}
                   >
@@ -456,7 +518,7 @@ export default function Index() {
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-60"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-60 hover:cursor-pointer"
                     disabled={submitting}
                   >
                     {submitting ? "Saving…" : "Save Changes"}

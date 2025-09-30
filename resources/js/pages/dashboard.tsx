@@ -5,11 +5,10 @@ import { Timer, CalendarDays, RefreshCcw } from 'lucide-react';
 import { Dialog } from "@headlessui/react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import { router, Head, useForm, usePage } from "@inertiajs/react";
 import interactionPlugin from "@fullcalendar/interaction";
-import { Head, useForm, usePage } from "@inertiajs/react";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 
 type Appointment = {
     id: number;
@@ -20,6 +19,14 @@ type Appointment = {
     status: string;
 };
 
+type CalendarEvent = {
+    title: string;
+    start: string;
+    end: string;
+    backgroundColor: string;
+    borderColor: string;
+};
+
 type Props = {
     appointments: Appointment[];
     inProgress: Appointment | null;
@@ -27,13 +34,11 @@ type Props = {
     countToday: number;
     countWeek: number;
     countMonth: number;
+    calendarEvents: CalendarEvent[]; // 👈 new
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
+    { title: 'Dashboard', href: '/dashboard' },
 ];
 
 export default function Dashboard({
@@ -43,10 +48,15 @@ export default function Dashboard({
     countToday,
     countWeek,
     countMonth,
+    calendarEvents, // 👈 new
 }: Props) {
-    const [events, setEvents] = useState<any[]>([]);
+    const [events, setEvents] = useState<CalendarEvent[]>(calendarEvents); // 👈 init with backend events
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<"existing" | "new">("new");
+
+    const handleSync = () => {
+        router.get(route("sync"));
+    };
 
     const page = usePage();
     const flash = (page.props as any)?.flash || {};
@@ -64,19 +74,11 @@ export default function Dashboard({
     });
 
     const formatDateForInput = (date: Date) => {
-        // "sv-SE" gives a sortable YYYY-MM-DD HH:mm:ss
         return date
             .toLocaleString("sv-SE", { timeZone: "Europe/Rome" })
-            .replace(" ", "T") // datetime-local expects T between date & time
-            .slice(0, 16);     // trim seconds
+            .replace(" ", "T")
+            .slice(0, 16);
     };
-
-    // ---- Load Calendar Events ----
-    useEffect(() => {
-        axios.get("/calendar/events").then((res) => {
-            setEvents(res.data);
-        });
-    }, []);
 
     // ---- When Slot is Selected ----
     const handleSelect = (info: any) => {
@@ -92,6 +94,8 @@ export default function Dashboard({
                 alert("Appointment saved!");
                 setIsOpen(false);
                 reset();
+                // optional: re-sync calendar after save
+                // setEvents([...events, newEventFromBackend])
             },
         });
     };
@@ -178,25 +182,26 @@ export default function Dashboard({
             <div className="p-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold mb-4">Calendar</h2>
-                    <button onClick={() => window.location.reload()}
-                        className="px-3 py-1 bg-blue-500 flex text-white rounded hover:bg-blue-600"
+                    <button
+                        onClick={handleSync}
+                        className="px-3 py-1 bg-blue-500 flex items-center text-white rounded hover:bg-blue-600"
                     >
                         <RefreshCcw className="mr-2 w-4" /> Sync
                     </button>
                 </div>
-                
+
                 <FullCalendar
                     plugins={[timeGridPlugin, interactionPlugin]}
                     initialView="timeGridWeek"
                     selectable={true}
                     selectMirror={true}
                     selectOverlap={false}
-                    events={events}
+                    events={events} // 👈 from backend
                     select={handleSelect}
-                    slotMinTime="09:00:00"
-                    slotMaxTime="23:00:00"
+                    slotMinTime="00:00:00"
+                    slotMaxTime="24:00:00"
                     height="auto"
-                    selectLongPressDelay={200} // 👈 required for mobile drag select
+                    selectLongPressDelay={200}
                     slotLabelFormat={{
                         hour: "2-digit",
                         minute: "2-digit",
@@ -208,15 +213,15 @@ export default function Dashboard({
                         hour12: false,
                     }}
                 />
-
-
             </div>
 
             {/* Popup Modal with Form + Tabs */}
-            <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
-                <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-                    <div className="dark:bg-gray-900 p-6 rounded shadow w-full max-w-lg bg-gray-300">
-                        <h3 className="text-lg font-bold mb-4">Book Appointment</h3>
+            <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50 p-6 dialog">
+
+                <div className="fixed inset-0 z-[9999] bg-gray-700/20 flex justify-center items-center p-4">
+                    <div className="bg-sky-100 dark:bg-gray-800 dark:border-gray-100 w-full max-w-[95%] sm:max-w-[30rem] rounded-lg shadow-lg 
+                  max-h-[90vh] overflow-y-auto p-6">
+                        <h2 className="text-xl font-bold mb-4">Edit Appointment</h2>
 
                         {/* Tabs */}
                         <div className="flex space-x-4 mb-6">
@@ -326,20 +331,34 @@ export default function Dashboard({
                                 </div>
                             )}
 
-                            {/* Service */}
-                            <div>
-                                <label className="block mb-1">Service</label>
-                                <select
-                                    value={data.service}
-                                    onChange={(e) => setData("service", e.target.value)}
-                                    className="w-full border p-2 rounded dark:bg-gray-900"
-                                >
-                                    <option value="">Select</option>
-                                    <option value="Hair Cut">Hair Cut</option>
-                                    <option value="Beard Shaping">Beard Shaping</option>
-                                    <option value="Other Services">Other Services</option>
-                                </select>
-                                {errors.service && <p className="text-red-500">{errors.service}</p>}
+                            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                {/* Service */}
+                                <div>
+                                    <label className="block mb-1">Service</label>
+                                    <select
+                                        value={data.service}
+                                        onChange={(e) => setData("service", e.target.value)}
+                                        className="w-full border p-2 rounded dark:bg-gray-900"
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="Hair Cut">Hair Cut</option>
+                                        <option value="Beard Shaping">Beard Shaping</option>
+                                        <option value="Other Services">Other Services</option>
+                                    </select>
+                                    {errors.service && <p className="text-red-500">{errors.service}</p>}
+                                </div>
+                                {/* Duration */}
+                                <div>
+                                    <label className="block mb-1">Duration (Minutes)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full border p-2 rounded"
+                                        placeholder="30"
+                                        value={data.duration}
+                                        onChange={(e) => setData("duration", e.target.value)}
+                                    />
+                                    {errors.duration && <p className="text-red-500">{errors.duration}</p>}
+                                </div>
                             </div>
 
                             {/* Appointment Time */}
@@ -356,18 +375,7 @@ export default function Dashboard({
                                 )}
                             </div>
 
-                            {/* Duration */}
-                            <div>
-                                <label className="block mb-1">Duration</label>
-                                <input
-                                    type="number"
-                                    className="w-full border p-2 rounded"
-                                    placeholder="30"
-                                    value={data.duration}
-                                    onChange={(e) => setData("duration", e.target.value)}
-                                />
-                                {errors.duration && <p className="text-red-500">{errors.duration}</p>}
-                            </div>
+
 
                             {/* Status */}
                             <div>
@@ -406,7 +414,7 @@ export default function Dashboard({
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-4 py-2 bg-pink-600 text-white rounded"
+                                    className="px-4 py-2 bg-pink-600 text-white rounded hover:cursor-pointer"
                                 >
                                     Save Appointment
                                 </button>

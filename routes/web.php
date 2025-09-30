@@ -53,34 +53,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/whatsapp/manual/{id}', [WhatsappController::class, 'manual_message'])->name('whatsapp_manual');
 });
 
-Route::get('/calendar/freebusy', function () {
-    $client = new Client();
-    $client->setAuthConfig(storage_path('app/google-calendar/service-account-credentials.json'));
-    $client->addScope(Calendar::CALENDAR);
-
-    // 👇 impersonate the calendar owner
-    $client->setSubject("whatsapp-salonipro@velvety-rookery-473117-v9.iam.gserviceaccount.com");
-
-    $service = new Calendar($client);
-
-    $timeMin = now()->startOfDay()->toRfc3339String();
-    $timeMax = now()->addWeek()->endOfDay()->toRfc3339String();
-
-    $requestBody = new \Google\Service\Calendar\FreeBusyRequest([
-        'timeMin' => $timeMin,
-        'timeMax' => $timeMax,
-        'items' => [
-            ['id' => 'primary']
-        ]
-    ]);
-
-    $freebusy = $service->freebusy->query($requestBody);
-
-    return response()->json($freebusy);
-});
-
 // routes/web.php
-Route::get('/calendar/events', [AppointmentController::class, 'events']);
+Route::get('/calendar/events', [AppointmentController::class, 'events'])->name('sync');
 
 Route::get('/appointments', [AppointmentController::class, 'index']);
 Route::post('/appointments/store', [AppointmentController::class, 'store']);

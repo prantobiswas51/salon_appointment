@@ -23,7 +23,6 @@ class AppointmentController extends Controller
             ->orderByDesc('created_at')
             ->paginate(10);
 
-
         return Inertia::render('appointment/index', [
             'appointments' => $appointments,
         ]);
@@ -31,21 +30,30 @@ class AppointmentController extends Controller
 
     public function events()
     {
-        // fetch Google Calendar events
+
+        // fetch Google Calendar events (already synced into GoogleEvent model)
         $googleEvents = GoogleEvent::get();
 
-        // map Google events to FullCalendar format
         $events = $googleEvents->map(function ($event) {
-            return [
-                'title' => $event->name,
-                'start' => Carbon::parse($event->startDateTime)->toIso8601String(),
-                'end'   => Carbon::parse($event->endDateTime)->toIso8601String(),
-                'backgroundColor' => '#ef4444',
-                'borderColor' => '#b91c1c',
-            ];
-        });
+            // Try to find an existing appointment with this event_id
+            $appointment = Appointment::where('event_id', $event->id)->first();
 
-        return response()->json($events);
+            $start = Carbon::parse($event->startDateTime)->timezone('UTC');
+            $end   = Carbon::parse($event->endDateTime)->timezone('UTC');
+            $duration = $start->diffInMinutes($end);
+
+            if (!$appointment) {
+                // Create new appointment if not exists
+                Appointment::create([
+                    'client_id'         => null, // you’ll need logic to assign client if required
+                    'service'           => $event->name,
+                    'start_time'        => $start,
+                    'duration'          => $duration,
+                    'notes'             => null,
+                    'event_id'          => $event->id, // keep track to avoid duplicates
+                ]);
+            }
+        });
     }
 
     public function create()
@@ -94,16 +102,13 @@ class AppointmentController extends Controller
         $appointment->notes      = $request->notes;
         $appointment->save();
 
-
-
-
         return redirect()->back()->with('success', 'Appointment created successfully!');
     }
 
     public function update(Request $request, Appointment $appointment)
     {
-        $validated = $request->validate([
-            'client_id'         => ['required', 'integer', 'exists:clients,id'],
+        $request->validate([
+            'client_id'         => ['nullable', 'integer', 'exists:clients,id'],
             'service'           => ['required', 'string', 'max:255'],
             'duration'          => ['nullable', 'numeric', 'max:120'],
             'attendance_status' => ['nullable', 'string', 'max:50'],
@@ -111,28 +116,63 @@ class AppointmentController extends Controller
             'status'            => ['required', 'string', 'max:50'],
             'reminder_sent'     => ['nullable', 'date'],
             'notes'             => ['nullable', 'string'],
+
+            'event_id'          => ['required', 'string'],
+            'client_name'       => ['nullable', 'string'],
+            'client_phone'      => ['required', 'string'],
+            'client_email'      => ['nullable', 'email'],
         ]);
 
-        // Update appointment locally
-        $appointment->update($validated);
+        // find or create client by phone
+        $client = Client::where('phone', $request->client_phone)->first();
 
+        if ($client) {
+            $client->update([
+                'name'  => $request->client_name,
+                'phone' => $request->client_phone,
+                'email' => $request->client_email,
+            ]);
+        } else {
+            $client = Client::create([
+                'name'  => $request->client_name,
+                'phone' => $request->client_phone,
+                'email' => $request->client_email,
+            ]);
+        }
+
+        // update appointment
+        $appointment->update([
+            'client_id'         => $client->id,
+            'service'           => $request->service,
+            'duration'          => $request->duration,
+            'attendance_status' => $request->attendance_status,
+            'start_time'        => $request->start_time,
+            'status'            => $request->status,
+            'reminder_sent'     => $request->reminder_sent,
+            'notes'             => $request->notes,
+            'event_id'          => $request->event_id,
+        ]);
+
+        // update related event if exists
         if ($appointment->event_id) {
             $event = Event::find($appointment->event_id);
 
             if ($event) {
-                $event->name = $appointment->client->name . ' - ' . $appointment->service;
-                $event->startDateTime = $appointment->start_time;
+                $event->name = $client->name . ' - ' . $appointment->service;
 
+                $start = Carbon::parse($appointment->start_time);
                 $duration = (int) ($appointment->duration ?? 30);
-                $event->endDateTime = (clone $appointment->start_time)->addMinutes($duration);
+
+                $event->startDateTime = $start;
+                $event->endDateTime   = (clone $start)->addMinutes($duration);
 
                 $event->save();
             }
         }
 
-
         return back(303)->with('success', 'Appointment updated successfully.');
     }
+
     public function destroy(int $id): RedirectResponse
     {
         $appointment = Appointment::findOrFail($id);

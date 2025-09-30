@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('client_id')->constrained()->onDelete('cascade');
-            $table->enum('service', ['Hair Cut', 'Beard Shaping', 'Other Services']);
+            $table->foreignId('client_id')->nullable()->constrained()->onDelete('cascade');
+            $table->string('service')->nullable();
             $table->timestamp('start_time');
             $table->integer('duration')->default(30); // in minutes
-            $table->enum('attendance_status', ['attended', 'canceled', 'no_show'])->nullable();
+            $table->enum('attendance_status', ['attended', 'canceled', 'no_show', 'pending'])->nullable();
             $table->enum('status', ['Scheduled', 'Confirmed', 'Canceled'])->default('Scheduled');
             $table->timestamp('reminder_sent')->nullable();
             $table->text('notes')->nullable();
-            $table->string('event_id')->nullable();
+            $table->string('event_id')->nullable()->unique();
             $table->timestamps();
         });
     }

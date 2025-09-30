@@ -55,7 +55,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <div className="p-2 bg-amber-500 rounded-md text-center"><Link href={'/appointment/create'}>+ New appointment</Link></div>
+                {/* <div className="p-2 bg-amber-500 rounded-md text-center"><Link href={'/appointment/create'}>+ New appointment</Link></div> */}
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
