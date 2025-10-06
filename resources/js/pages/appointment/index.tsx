@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { FilePen, Search, Trash, TimerReset } from 'lucide-react';
+import { FilePen, Search, Trash, TimerReset, X, Filter } from 'lucide-react';
 
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -18,9 +18,7 @@ type Client = {
 
 type Appointment = {
   id: number;
-
   client_id: number;
-
   service: string;
   duration: string;
   event_id: string;
@@ -37,9 +35,19 @@ type FlashProps = {
   error?: string;
 };
 
+type Filters = {
+  q?: string;
+  date_from?: string;
+  date_to?: string;
+  status?: string;
+  service?: string;
+  attendance_status?: string;
+};
+
 type PageProps = {
   flash: FlashProps;
   appointments: any; // adjust type as needed
+  filters: Filters;
 };
 
 type Paginated<T> = {
@@ -48,8 +56,11 @@ type Paginated<T> = {
 };
 
 export default function Index() {
-  const { appointments } = usePage<{ appointments: Paginated<Appointment> }>().props;
-  const { flash } = usePage<PageProps>().props;
+  const { appointments, filters, flash } = usePage<{ 
+    appointments: Paginated<Appointment>; 
+    filters: Filters;
+    flash: FlashProps;
+  }>().props;
 
   // edit modal state
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -57,7 +68,47 @@ export default function Index() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [reminderId, setReminderId] = useState<number | null>(null);
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [searchFilters, setSearchFilters] = useState<Filters>({
+    q: filters.q || '',
+    date_from: filters.date_from || '',
+    date_to: filters.date_to || '',
+    status: filters.status || '',
+    service: filters.service || '',
+    attendance_status: filters.attendance_status || '',
+  });
 
+
+  // Search functionality
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    router.get('/appointments', searchFilters, {
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
+
+  const clearFilters = (): void => {
+    const clearedFilters = {
+      q: '',
+      date_from: '',
+      date_to: '',
+      status: '',
+      service: '',
+      attendance_status: '',
+    };
+    setSearchFilters(clearedFilters);
+    router.get('/appointments', {}, {
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
+
+  const updateFilter = (key: keyof Filters, value: string): void => {
+    setSearchFilters(prev => ({ ...prev, [key]: value }));
+  };
 
   const openEdit = (appt: Appointment): void => {
     // shallow copy so we can edit fields
@@ -175,21 +226,206 @@ export default function Index() {
       <div className="p-2 m-4">
         <h1 className="text-2xl font-bold mb-4">Scheduled Appointments</h1>
 
-        {/* search form */}
-        <form action="" method="get" className="mb-4 flex flex-col sm:flex-row">
-          <input
-            type="text"
-            placeholder="Search by name, phone, email"
-            className="border p-2 px-4 flex-1 rounded-lg mb-2 sm:mb-0 sm:mr-2"
-            name="q"
-          />
-          <button
-            type="submit"
-            className="border flex justify-center items-center rounded-lg p-2 bg-pink-600 text-white"
-          >
-            <Search className="mr-1" /> <span>Search</span>
-          </button>
-        </form>
+        {/* Search and Filter Section */}
+        <div className="mb-6 space-y-4">
+          {/* Main Search Form */}
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              placeholder="Search by name, phone, email, service..."
+              className="border p-3 px-4 flex-1 rounded-lg"
+              value={searchFilters.q}
+              onChange={(e) => updateFilter('q', e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                className="border flex justify-center items-center rounded-lg p-3 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                <Filter className="mr-1" size={16} />
+                <span>Filters</span>
+              </button>
+              <button
+                type="submit"
+                className="border flex justify-center items-center rounded-lg p-3 bg-pink-600 text-white hover:bg-pink-700 transition-colors"
+              >
+                <Search className="mr-1" size={16} />
+                <span>Search</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Date From
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full border p-2 rounded-lg"
+                    value={searchFilters.date_from}
+                    onChange={(e) => updateFilter('date_from', e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Date To
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full border p-2 rounded-lg"
+                    value={searchFilters.date_to}
+                    onChange={(e) => updateFilter('date_to', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status
+                  </label>
+                  <select
+                    className="w-full border p-2 rounded-lg"
+                    value={searchFilters.status}
+                    onChange={(e) => updateFilter('status', e.target.value)}
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Canceled">Canceled</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Service
+                  </label>
+                  <select
+                    className="w-full border p-2 rounded-lg"
+                    value={searchFilters.service}
+                    onChange={(e) => updateFilter('service', e.target.value)}
+                  >
+                    <option value="">All Services</option>
+                    <option value="Hair Cut">Hair Cut</option>
+                    <option value="Beard Shaping">Beard Shaping</option>
+                    <option value="Other Services">Other Services</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Attendance
+                  </label>
+                  <select
+                    className="w-full border p-2 rounded-lg"
+                    value={searchFilters.attendance_status}
+                    onChange={(e) => updateFilter('attendance_status', e.target.value)}
+                  >
+                    <option value="">All Attendance</option>
+                    <option value="attended">Attended</option>
+                    <option value="canceled">Canceled</option>
+                    <option value="no_show">No Show</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="w-full flex justify-center items-center rounded-lg p-2 bg-red-100 hover:bg-red-200 text-red-700 transition-colors"
+                  >
+                    <X className="mr-1" size={16} />
+                    <span>Clear Filters</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Active Filters Display */}
+          {(filters.q || filters.date_from || filters.date_to || filters.status || filters.service || filters.attendance_status) && (
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Active filters:</span>
+              {filters.q && (
+                <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Search: "{filters.q}"
+                  <button
+                    type="button"
+                    onClick={() => updateFilter('q', '')}
+                    className="ml-1 text-blue-600 hover:text-blue-800"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {filters.date_from && (
+                <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                  From: {filters.date_from}
+                  <button
+                    type="button"
+                    onClick={() => updateFilter('date_from', '')}
+                    className="ml-1 text-green-600 hover:text-green-800"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {filters.date_to && (
+                <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                  To: {filters.date_to}
+                  <button
+                    type="button"
+                    onClick={() => updateFilter('date_to', '')}
+                    className="ml-1 text-green-600 hover:text-green-800"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {filters.status && (
+                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                  Status: {filters.status}
+                  <button
+                    type="button"
+                    onClick={() => updateFilter('status', '')}
+                    className="ml-1 text-purple-600 hover:text-purple-800"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {filters.service && (
+                <span className="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                  Service: {filters.service}
+                  <button
+                    type="button"
+                    onClick={() => updateFilter('service', '')}
+                    className="ml-1 text-yellow-600 hover:text-yellow-800"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {filters.attendance_status && (
+                <span className="inline-flex items-center px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full">
+                  Attendance: {filters.attendance_status}
+                  <button
+                    type="button"
+                    onClick={() => updateFilter('attendance_status', '')}
+                    className="ml-1 text-indigo-600 hover:text-indigo-800"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* responsive table */}
         <div className="overflow-x-auto">

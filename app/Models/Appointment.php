@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\Client;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'client_id',
         'service',
@@ -16,7 +18,7 @@ class Appointment extends Model
         'status',
         'reminder_sent',
         'notes',
-        'event_id'
+        'event_id',
     ];
 
     protected $casts = [

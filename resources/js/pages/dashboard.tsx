@@ -54,8 +54,45 @@ export default function Dashboard({
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<"existing" | "new">("new");
 
-    const handleSync = () => {
-        router.get(route("sync"));
+    const [syncLoading, setSyncLoading] = useState(false);
+    const [syncMessage, setSyncMessage] = useState<string>('');
+
+    const handleSync = async () => {
+        setSyncLoading(true);
+        setSyncMessage('');
+        
+        try {
+            const response = await fetch('/calendar/events', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                const { created, updated, errors } = result.results;
+                let message = `Sync completed! `;
+                if (created > 0) message += `${created} created, `;
+                if (updated > 0) message += `${updated} updated, `;
+                if (errors.length > 0) message += `${errors.length} errors`;
+                
+                setSyncMessage(message.replace(/,\s*$/, ''));
+                
+                // Refresh the page to show updated data
+                setTimeout(() => {
+                    router.reload();
+                }, 2000);
+            } else {
+                setSyncMessage('Sync failed. Please try again.');
+            }
+        } catch (error) {
+            setSyncMessage('Sync failed. Please check your connection.');
+        } finally {
+            setSyncLoading(false);
+        }
     };
 
     const page = usePage();
@@ -180,14 +217,32 @@ export default function Dashboard({
 
             {/* Calendar */}
             <div className="p-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold mb-4">Calendar</h2>
-                    <button
-                        onClick={handleSync}
-                        className="px-3 py-1 bg-blue-500 flex items-center text-white rounded hover:bg-blue-600"
-                    >
-                        <RefreshCcw className="mr-2 w-4" /> Sync
-                    </button>
+                <div className="flex flex-col">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold mb-4">Calendar</h2>
+                        <button
+                            onClick={handleSync}
+                            disabled={syncLoading}
+                            className={`px-3 py-1 flex items-center text-white rounded transition-colors ${
+                                syncLoading 
+                                    ? 'bg-gray-400 cursor-not-allowed' 
+                                    : 'bg-blue-500 hover:bg-blue-600'
+                            }`}
+                        >
+                            <RefreshCcw className={`mr-2 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                            {syncLoading ? 'Syncing...' : 'Sync'}
+                        </button>
+                    </div>
+                    
+                    {syncMessage && (
+                        <div className={`mb-4 p-3 rounded-md ${
+                            syncMessage.includes('failed') || syncMessage.includes('error')
+                                ? 'bg-red-100 text-red-700 border border-red-200'
+                                : 'bg-green-100 text-green-700 border border-green-200'
+                        }`}>
+                            {syncMessage}
+                        </div>
+                    )}
                 </div>
 
                 <FullCalendar
