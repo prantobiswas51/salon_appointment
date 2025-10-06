@@ -164,7 +164,7 @@ class EventParserService
         foreach ($googleEvents as $event) {
             try {
                 // Try to find an existing appointment with this event_id
-                $appointment = \App\Models\Appointment::where('event_id', $event->id)->first();
+                $appointment = \App\Models\Appointment::with('client')->where('event_id', $event->id)->first();
 
                 // Handle different date formats from Google Calendar
                 $startTime = $event->startDateTime ?? $event->start ?? null;
@@ -189,11 +189,11 @@ class EventParserService
                 if (!$appointment) {
                     // Create new appointment if we have valid client name and service
                     if ($parsedEvent['client_name'] && $parsedEvent['service_name']) {
-                        // Find or create client
-                        $client = \App\Models\Client::where('name', $parsedEvent['client_name'])->first();
+                        // Find existing client first (case-insensitive search)
+                        $client = \App\Models\Client::whereRaw('LOWER(name) = LOWER(?)', [$parsedEvent['client_name']])->first();
                         
                         if (!$client) {
-                            // Create client without phone number (will use database default or null)
+                            // Only create client if name doesn't exist (avoid duplicates)
                             $client = \App\Models\Client::create([
                                 'name' => $parsedEvent['client_name'],
                                 'phone' => null, // Don't set phone from Google Calendar
@@ -236,21 +236,24 @@ class EventParserService
                         $needsUpdate = true;
                     }
 
-                    // Handle client name changes
+                    // Handle client name changes - only if the client name actually changed
                     if ($parsedEvent['client_name']) {
-                        // First try to find existing client
-                        $client = Client::where('name', $parsedEvent['client_name'])->first();
+                        $currentClient = $appointment->client;
                         
-                        if (!$client) {
-                            // Create client without phone number (will be set manually later)
-                            $client = Client::create([
-                                'name' => $parsedEvent['client_name'],
-                                'phone' => null, // Don't set phone from Google Calendar
-                                'status' => 'Green'
-                            ]);
-                        }
+                        // Only update client if the name actually changed (case-insensitive)
+                        if (strtolower($currentClient->name) !== strtolower($parsedEvent['client_name'])) {
+                            // First try to find existing client with the new name (case-insensitive)
+                            $client = Client::whereRaw('LOWER(name) = LOWER(?)', [$parsedEvent['client_name']])->first();
+                            
+                            if (!$client) {
+                                // Create client without phone number (will be set manually later)
+                                $client = Client::create([
+                                    'name' => $parsedEvent['client_name'],
+                                    'phone' => null, // Don't set phone from Google Calendar
+                                    'status' => 'Green'
+                                ]);
+                            }
 
-                        if ($appointment->client_id !== $client->id) {
                             $updateData['client_id'] = $client->id;
                             $needsUpdate = true;
                         }

@@ -177,21 +177,32 @@ class AppointmentController extends Controller
             'client_email'      => ['nullable', 'email'],
         ]);
 
-        // find or create client by phone
-        $client = Client::where('phone', $request->client_phone)->first();
-
-        if ($client) {
+        // Update the existing client if client_id is provided, otherwise find by phone or create new
+        if ($request->filled('client_id')) {
+            // Use the existing client from the appointment
+            $client = Client::findOrFail($request->client_id);
             $client->update([
                 'name'  => $request->client_name,
                 'phone' => $request->client_phone,
                 'email' => $request->client_email,
             ]);
         } else {
-            $client = Client::create([
-                'name'  => $request->client_name,
-                'phone' => $request->client_phone,
-                'email' => $request->client_email,
-            ]);
+            // Find by phone or create new client (fallback for appointments without client_id)
+            $client = Client::where('phone', $request->client_phone)->first();
+            
+            if ($client) {
+                $client->update([
+                    'name'  => $request->client_name,
+                    'phone' => $request->client_phone,
+                    'email' => $request->client_email,
+                ]);
+            } else {
+                $client = Client::create([
+                    'name'  => $request->client_name,
+                    'phone' => $request->client_phone,
+                    'email' => $request->client_email,
+                ]);
+            }
         }
 
         // update appointment

@@ -179,7 +179,7 @@ export default function Index() {
       {
         service: editing.service,
         duration: editing.duration,
-        attendence_status: editing.attendence_status,
+        attendance_status: editing.attendence_status,
         start_time: editing.start_time,
         status: editing.status,
         event_id: editing.event_id,
