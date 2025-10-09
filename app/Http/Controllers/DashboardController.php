@@ -40,21 +40,43 @@ class DashboardController extends Controller
             'status'      => $a->status,
         ]);
 
-        // FullCalendar events (reuse same $appointments)
-        $calendarEvents = $appointments->map(function ($event) {
+        $allAppointments = Appointment::with('client')
+            ->orderBy('start_time')
+            ->get();
+
+        $calendarEvents = $allAppointments->map(function ($event) {
             return [
+                'id' => (string) $event->id,
                 'title' => ($event->client->name ?? 'Unknown') . ' - ' . $event->service,
-                'start' => $event->start_time->toIso8601String(),
-                'end'   => $event->start_time->copy()->addMinutes($event->duration)->toIso8601String(),
+                'start' => $event->start_time->format('Y-m-d\TH:i:s'),
+                'end'   => $event->start_time->copy()->addMinutes($event->duration)->format('Y-m-d\TH:i:s'),
                 'backgroundColor' => match ($event->status) {
-                    'in_progress' => '#3b82f6', // blue
-                    'completed'   => '#22c55e', // green
-                    'cancelled'   => '#ef4444', // red
-                    default       => '#facc15', // yellow
+                    'In Progress' => '#f59e0b', // amber
+                    'Completed'   => '#6b7280', // gray
+                    'Canceled'    => '#ef4444', // red
+                    'Confirmed'   => '#10b981', // green
+                    'Scheduled'   => '#3b82f6', // blue
+                    default       => '#6b7280', // gray
                 },
-                'borderColor' => '#000000',
+                'borderColor' => match ($event->status) {
+                    'In Progress' => '#f59e0b',
+                    'Completed'   => '#6b7280',
+                    'Canceled'    => '#ef4444',
+                    'Confirmed'   => '#10b981',
+                    'Scheduled'   => '#3b82f6',
+                    default       => '#6b7280',
+                },
+                'extendedProps' => [
+                    'appointmentId' => $event->id,
+                    'clientName' => $event->client->name ?? 'Unknown',
+                    'service' => $event->service,
+                    'status' => $event->status,
+                    'duration' => (int) $event->duration,
+                ],
             ];
         });
+
+        // dd($calendarEvents);
 
         return inertia('Dashboard', [
             'appointments' => $appointmentsData,
