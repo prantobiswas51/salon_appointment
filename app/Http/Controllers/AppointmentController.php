@@ -3,18 +3,19 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
-use Spatie\GoogleCalendar\Event as GoogleEvent;
 use Inertia\Inertia;
 use App\Models\Client;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use function Pest\Laravel\json;
-
 use Spatie\GoogleCalendar\Event;
+use Illuminate\Support\Facades\Log;
+use App\Services\EventParserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 use function PHPUnit\Framework\returnSelf;
-use App\Services\EventParserService;
+use Spatie\GoogleCalendar\Event as GoogleEvent;
+use Google\Service\Exception as GoogleServiceException;
 
 class AppointmentController extends Controller
 {
@@ -189,7 +190,7 @@ class AppointmentController extends Controller
         } else {
             // Find by phone or create new client (fallback for appointments without client_id)
             $client = Client::where('phone', $request->client_phone)->first();
-            
+
             if ($client) {
                 $client->update([
                     'name'  => $request->client_name,
@@ -240,14 +241,25 @@ class AppointmentController extends Controller
 
     public function destroy(int $id): RedirectResponse
     {
+
+
         $appointment = Appointment::findOrFail($id);
 
-        // Delete the Google Calendar event first
         if ($appointment->event_id) {
-            $event = Event::find($appointment->event_id); // only works if $event_id is Spatie Event::id
-            // If $appointment->event_id is Google Event ID, do:
-            $googleEvent = Event::find($appointment->event_id);
-            $googleEvent?->delete();
+            try {
+                $googleEvent = Event::find($appointment->event_id);
+                $googleEvent?->delete();
+            } catch (GoogleServiceException $e) {
+                // Ignore if Google says event doesn't exist anymore
+                if (in_array($e->getCode(), [404, 410])) {
+                    Log::info("Google event already deleted: {$appointment->event_id}");
+                } else {
+                    throw $e; // rethrow unexpected errors
+                }
+            } catch (\Exception $e) {
+                // Log other exceptions, but don't block deletion
+                Log::warning("Failed to delete Google event {$appointment->event_id}: {$e->getMessage()}");
+            }
         }
 
         // Delete the appointment locally
