@@ -23,7 +23,7 @@ class GoogleCalendarService
         // Configure HTTP client with SSL options for development
         if (config('app.env') !== 'production') {
             $guzzleClient = new GuzzleClient([
-                'verify' => env('GOOGLE_SSL_VERIFY', false), // Allow disabling SSL verification
+                'verify' => env('GOOGLE_SSL_VERIFY', false), 
                 'timeout' => 30,
                 'connect_timeout' => 10,
             ]);

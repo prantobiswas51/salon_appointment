@@ -83,20 +83,202 @@ class AppointmentController extends Controller
     public function events()
     {
         try {
-            // Use EventParserService to sync events with proper parsing and update handling
-            // This will automatically try to fetch fresh events from Google Calendar
-            $syncResults = EventParserService::syncGoogleCalendarEvents();
+            $syncResults = [
+                'created' => 0,
+                'updated' => 0,
+                'errors' => []
+            ];
 
-            // Check if sync was successful
-            if (!empty($syncResults['errors'])) {
+            // ---- Fetch Google Calendar Events ----
+            try {
+                $calendarService = new \App\Services\GoogleCalendarService();
+
+                if (!$calendarService->isConfigured()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Google Calendar credentials not found. Please check your Google credentials configuration.',
+                        'results' => $syncResults
+                    ]);
+                }
+
+                $result = $calendarService->getEvents();
+
+                if ($result['success']) {
+                    $googleEvents = collect($result['events'])->map(function ($event) {
+                        return (object)[
+                            'id' => $event->getId(),
+                            'summary' => $event->getSummary(),
+                            'startDateTime' => $event->getStart()->getDateTime() ?: $event->getStart()->getDate(),
+                            'endDateTime' => $event->getEnd()->getDateTime() ?: $event->getEnd()->getDate(),
+                            'updated' => $event->getUpdated()
+                        ];
+                    });
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to fetch events: ' . $result['error'],
+                        'results' => $syncResults
+                    ]);
+                }
+            } catch (\Exception $e) {
+                try {
+                    $googleEvents = \Spatie\GoogleCalendar\Event::get();
+                } catch (\Exception $spatieException) {
+                    $errorMessage = $spatieException->getMessage();
+                    if (strpos($errorMessage, 'SSL certificate problem') !== false || strpos($errorMessage, 'cURL error 60') !== false) {
+                        $errorMessage = 'SSL Certificate Error: Add GOOGLE_SSL_VERIFY=false to your .env file to bypass SSL verification in development.';
+                    }
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'results' => $syncResults
+                    ]);
+                }
+            }
+
+            // ---- Parse and Sync Events ----
+            if (empty($googleEvents) || $googleEvents->isEmpty()) {
+                $syncResults['errors'][] = 'No Google Calendar events found to sync';
                 return response()->json([
                     'success' => false,
-                    'message' => 'Sync completed with errors',
+                    'message' => 'No events found',
                     'results' => $syncResults
                 ]);
             }
 
-            // Return JSON response with sync results
+            foreach ($googleEvents as $event) {
+                try {
+                    // Parse event name -> "Client - Service - Phone"
+                    $eventName = $event->summary ?? '';
+                    $clientName = null;
+                    $serviceName = $eventName;
+                    $phone = null;
+
+                    if (substr_count($eventName, ' - ') >= 2) {
+                        $parts = explode(' - ', $eventName, 3);
+                        $clientName = trim($parts[0]);
+                        $serviceName = trim($parts[1]);
+                        $phone = trim($parts[2]);
+                    } elseif (strpos($eventName, ' - ') !== false) {
+                        $parts = explode(' - ', $eventName, 2);
+                        $clientName = trim($parts[0]);
+                        $serviceName = trim($parts[1]);
+                    }
+
+                    $appointment = \App\Models\Appointment::with('client')->where('event_id', $event->id)->first();
+
+                    $startTime = $event->startDateTime ?? $event->start ?? null;
+                    $endTime = $event->endDateTime ?? $event->end ?? null;
+
+                    if (!$startTime) {
+                        $syncResults['errors'][] = [
+                            'event_id' => $event->id,
+                            'error' => 'Event missing start time'
+                        ];
+                        continue;
+                    }
+
+                    $start = \Carbon\Carbon::parse($startTime)->timezone('UTC');
+                    $end = $endTime ? \Carbon\Carbon::parse($endTime)->timezone('UTC') : $start->copy()->addHour();
+                    $duration = $start->diffInMinutes($end);
+
+                    if (!$appointment) {
+                        $clientId = null;
+
+                        if ($clientName && $phone) {
+                            $client = \App\Models\Client::where('phone', $phone)->first();
+
+                            if ($client) {
+                                if (empty($client->name) || strtolower($client->name) !== strtolower($clientName)) {
+                                    $client->update(['name' => $clientName]);
+                                }
+                            } else {
+                                $client = \App\Models\Client::create([
+                                    'name' => $clientName,
+                                    'phone' => $phone,
+                                    'status' => 'Green',
+                                ]);
+                            }
+
+                            $clientId = $client->id;
+                        }
+
+                        \App\Models\Appointment::create([
+                            'client_id' => $clientId,
+                            'service' => $serviceName,
+                            'start_time' => $start,
+                            'duration' => $duration,
+                            'status' => 'confirmed',
+                            'attendance_status' => 'pending',
+                            'event_id' => $event->id,
+                        ]);
+
+                        $syncResults['created']++;
+                    } else {
+                        $needsUpdate = false;
+                        $updateData = [];
+
+                        if ($appointment->start_time->format('Y-m-d H:i:s') !== $start->format('Y-m-d H:i:s')) {
+                            $updateData['start_time'] = $start;
+                            $needsUpdate = true;
+                        }
+
+                        if ($appointment->duration != $duration) {
+                            $updateData['duration'] = $duration;
+                            $needsUpdate = true;
+                        }
+
+                        if ($appointment->service !== $serviceName) {
+                            $updateData['service'] = $serviceName;
+                            $needsUpdate = true;
+                        }
+
+                        if ($clientName) {
+                            $currentClient = $appointment->client;
+                            if (!$currentClient || strtolower($currentClient->name) !== strtolower($clientName)) {
+                                $client = \App\Models\Client::whereRaw('LOWER(name) = LOWER(?)', [$clientName])->first();
+
+                                if (!$client) {
+                                    $client = \App\Models\Client::create([
+                                        'name' => $clientName,
+                                        'phone' => $phone,
+                                        'status' => 'Green'
+                                    ]);
+                                }
+
+                                $updateData['client_id'] = $client->id;
+                                $needsUpdate = true;
+                            }
+                        } else {
+                            if ($appointment->client_id !== null) {
+                                $updateData['client_id'] = null;
+                                $needsUpdate = true;
+                            }
+                        }
+
+                        if ($needsUpdate) {
+                            $appointment->update($updateData);
+                            $syncResults['updated']++;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $syncResults['errors'][] = [
+                        'event_id' => $event->id,
+                        'error' => $e->getMessage()
+                    ];
+                }
+            }
+
+            // ---- Return Sync Results ----
+            if (!empty($syncResults['errors'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sync completed with some errors',
+                    'results' => $syncResults
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Calendar sync completed successfully',
@@ -110,6 +292,7 @@ class AppointmentController extends Controller
             ]);
         }
     }
+
 
     public function create()
     {

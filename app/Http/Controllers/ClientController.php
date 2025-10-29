@@ -54,4 +54,12 @@ class ClientController extends Controller
         // Return the updated client data back to the front end (Inertia)
         return redirect()->route('client.index');
     }
+
+    public function destroy($id)
+    {
+        $client = Client::findOrFail($id);
+        $client->delete();
+
+        return redirect()->route('client.index');
+    }
 }

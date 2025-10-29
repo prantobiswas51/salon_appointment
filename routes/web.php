@@ -47,6 +47,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/clients', [ClientController::class, 'index'])->name('client.index');
     Route::get('/client/create', [ClientController::class, 'create'])->name('client.create');
     Route::put('/client/{client}', [ClientController::class, 'update'])->name('client.update');
+    Route::delete('/client/{client}', [ClientController::class, 'destroy'])->name('client.destroy');
 
     Route::get('/whatsapp', [WhatsappController::class, 'index'])->name('whatsapp.index');
     Route::put('/whatsapp/{whatsapp}', [WhatsappController::class, 'update'])->name('whatsapp.update');

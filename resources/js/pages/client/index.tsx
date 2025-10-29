@@ -43,6 +43,12 @@ export default function Index() {
         setModalOpen(true);
     };
 
+    const deleteClient = (clientId: number) => {
+        if (confirm('Are you sure you want to delete this client?')) {
+            router.delete(route('client.destroy', clientId));
+        }
+    };
+
     const closeModal = () => {
         setModalOpen(false);
         setEditingClient(null);
@@ -101,13 +107,16 @@ export default function Index() {
                                     <td className="px-6 py-4 border-b">{client.id}</td>
                                     <td className="px-6 py-4 border-b">{client.name}</td>
                                     <td className="px-6 py-4 border-b">{client.phone}</td>
-                                    <td className="px-6 py-4 border-b">{client.status}</td>
+                                    <td className="px-6 py-4 border-b">
+                                        {client.status === 'Red' ? <span className="text-red-600 bg-red-200/50 p-2 rounded-md">{client.status}</span> : client.status === 'Green' ?
+                                            <span className="text-green-600 bg-green-200/50 p-2 rounded-md">{client.status}</span> : <span className="text-yellow-600 bg-yellow-200/50 p-2 rounded-md">{client.status}</span>}
+                                    </td>
                                     <td className="px-6 py-4 border-b flex items-center space-x-3">
                                         <FilePen
                                             className="text-amber-500 hover:text-amber-600 cursor-pointer"
                                             onClick={() => openModal(client)}
                                         />
-                                        <Trash className="text-red-500 hover:text-red-600 cursor-pointer" />
+                                        <Trash onClick={() => deleteClient(client.id)} className="text-red-500 hover:text-red-600 cursor-pointer" />
                                     </td>
                                 </tr>
                             ))}
@@ -147,7 +156,7 @@ export default function Index() {
                             <form onSubmit={handleUpdateClient} className="space-y-4">
                                 {/* Name */}
                                 <div>
-                                    <label className="block mb-2">Name</label>
+                                    <label className="block mb-2">Name <span className='text-red-600'>*</span></label>
                                     <input
                                         type="text" required
                                         className="border p-2 rounded-md w-full dark:border-gray-100"
@@ -158,17 +167,33 @@ export default function Index() {
                                     />
                                 </div>
 
-                                {/* Email */}
+                                {/* Phone */}
                                 <div>
-                                    <label className="block mb-2">Email</label>
+                                    <label className="block mb-2">Phone <span className='text-red-600'>*</span></label>
                                     <input
-                                        type="text"
+                                        type="text" required
                                         className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.email || ""}
+                                        value={editingClient.phone}
                                         onChange={(e) =>
-                                            setEditingClient({ ...editingClient, email: e.target.value })
+                                            setEditingClient({ ...editingClient, phone: e.target.value })
                                         }
                                     />
+                                </div>
+
+                                {/* Status */}
+                                <div>
+                                    <label className="block mb-2">Status <span className='text-red-600'>*</span></label>
+                                    <select
+                                        className="border p-2 rounded-md w-full dark:border-gray-100"
+                                        value={editingClient.status || ""}
+                                        onChange={(e) =>
+                                            setEditingClient({ ...editingClient, status: e.target.value })
+                                        }
+                                    >
+                                        <option value="Red">Red</option>
+                                        <option value="Green">Green</option>
+                                        <option value="Yellow">Yellow</option>
+                                    </select>
                                 </div>
 
                                 {/* DOB */}
@@ -184,34 +209,6 @@ export default function Index() {
                                     />
                                 </div>
 
-                                {/* Phone */}
-                                <div>
-                                    <label className="block mb-2">Phone</label>
-                                    <input
-                                        type="text" required
-                                        className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.phone}
-                                        onChange={(e) =>
-                                            setEditingClient({ ...editingClient, phone: e.target.value })
-                                        }
-                                    />
-                                </div>
-
-                                {/* Status */}
-                                <div>
-                                    <label className="block mb-2">Status</label>
-                                    <select
-                                        className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.status || ""} 
-                                        onChange={(e) =>
-                                            setEditingClient({ ...editingClient, status: e.target.value })
-                                        }
-                                    >
-                                        <option value="Red">Red</option>
-                                        <option value="Green">Green</option>
-                                        <option value="Yellow">Yellow</option>
-                                    </select>
-                                </div>
 
                                 {/* Notes */}
                                 <div>
