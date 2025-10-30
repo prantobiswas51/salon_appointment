@@ -39,19 +39,18 @@ class WhatsappController extends Controller
     public function manual_message(Request $request)
     {
         try {
-            // Find appointment with client relation
-            $booking = Appointment::with('client')->findOrFail($request->id);
+            // Find appointment 
+            $booking = Appointment::findOrFail($request->id);
 
-            if (!$booking->client) {
+            if (!$booking->client_phone) {
                 Log::warning('WhatsApp send failed - no client found', [
                     'appointment_id' => $booking->id,
                 ]);
                 return false;
             }
 
-            $client        = $booking->client;
-            $client_number = $client->phone;
-            $client_name   = $client->name;
+            $client_number = $booking->client_phone;
+            $client_name   = $booking->client_name;
 
             // Format appointment time
             $appointment_time = $booking->start_time

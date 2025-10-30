@@ -9,16 +9,12 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Appointment', href: '/appointment' },
 ];
 
-type Client = {
-  id: number;
-  name: string;
-  phone: string;
-  email?: string;
-};
+
 
 type Appointment = {
   id: number;
-  client_id: number;
+  client_name: string;
+  client_phone: string;
   service: string;
   duration: string;
   event_id: string;
@@ -27,7 +23,6 @@ type Appointment = {
   status: string;
   notes: string;
   reminder_sent: string;
-  client: Client;
 };
 
 type FlashProps = {
@@ -56,8 +51,8 @@ type Paginated<T> = {
 };
 
 export default function Index() {
-  const { appointments, filters, flash } = usePage<{ 
-    appointments: Paginated<Appointment>; 
+  const { appointments, filters, flash } = usePage<{
+    appointments: Paginated<Appointment>;
     filters: Filters;
     flash: FlashProps;
   }>().props;
@@ -68,7 +63,7 @@ export default function Index() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [reminderId, setReminderId] = useState<number | null>(null);
-  
+
   // Filter state
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [searchFilters, setSearchFilters] = useState<Filters>({
@@ -178,18 +173,13 @@ export default function Index() {
       url,
       {
         service: editing.service,
+        client_name: editing.client_name,
+        client_phone: editing.client_phone,
         duration: editing.duration,
-        attendance_status: editing.attendence_status,
-        start_time: editing.start_time,
         status: editing.status,
+        start_time: editing.start_time,
         event_id: editing.event_id,
         notes: editing.notes,
-
-        // client info
-        client_id: editing.client_id,
-        client_name: editing.client?.name,
-        client_phone: editing.client?.phone,
-        client_email: editing.client?.email,
       },
       {
         preserveScroll: true,
@@ -271,7 +261,7 @@ export default function Index() {
                     onChange={(e) => updateFilter('date_from', e.target.value)}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Date To
@@ -447,8 +437,8 @@ export default function Index() {
               {appointments.data.map((appointment) => (
                 <tr key={appointment.id} className="hover:dark:bg-gray-900 hover:bg-gray-200 transition">
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.id}</td>
-                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.name}</td>
-                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.client?.phone}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.client_name}</td>
+                  <td className="px-3 lg:px-6 py-4 border-b">{appointment.client_phone}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.service}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{new Date(appointment.start_time).toLocaleString()}</td>
                   <td className="px-3 lg:px-6 py-4 border-b">{appointment.duration} Minutes</td>
@@ -505,11 +495,11 @@ export default function Index() {
                 </div>
                 <div className="flex justify-between mb-2">
                   <span className="text-gray-600 text-sm">Name</span>
-                  <span>{appointment.client?.name}</span>
+                  <span>{appointment.client_name}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span className="text-gray-600 text-sm">Phone</span>
-                  <span>{appointment.client?.phone}</span>
+                  <span>{appointment.client_phone}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span className="text-gray-600 text-sm">Service</span>
@@ -593,22 +583,16 @@ export default function Index() {
 
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
-                    <div className="font-medium text-gray-700 ">Client</div>
+                    <div className="font-medium text-gray-700 ">Client Name</div>
 
                     <div className="mt-1">
                       <input
                         type="text" // should be text, not number
                         className="border p-2 rounded-lg w-full dark:border-gray-300"
                         required
-                        value={editing.client?.name || ""}
+                        value={editing.client_name || ""}
                         onChange={(e) =>
-                          setEditing({
-                            ...editing,
-                            client: {
-                              ...editing.client,
-                              name: e.target.value,
-                            },
-                          })
+                          setEditing({ ...editing, client_name: e.target.value })
                         }
                       />
                     </div>
@@ -621,15 +605,9 @@ export default function Index() {
                         type="text" // should be text, not number
                         required
                         className="border p-2 rounded-lg w-full dark:border-gray-300"
-                        value={editing.client?.phone || ""}
+                        value={editing.client_phone || ""}
                         onChange={(e) =>
-                          setEditing({
-                            ...editing,
-                            client: {
-                              ...editing.client,
-                              phone: e.target.value,
-                            },
-                          })
+                          setEditing({ ...editing, client_phone: e.target.value })
                         }
                       />
                     </div>
@@ -738,10 +716,6 @@ export default function Index() {
                     }
                   />
                 </div>
-
-
-
-
 
                 <div className="flex justify-end flex-wrap">
                   <button

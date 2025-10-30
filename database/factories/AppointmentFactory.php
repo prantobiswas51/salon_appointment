@@ -9,15 +9,12 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class AppointmentFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+
     public function definition(): array
     {
         return [
-            'client_id' => \App\Models\Client::factory(),
+            'client_name' => fake()->name(),
+            'client_phone' => fake()->phoneNumber(),
             'service' => fake()->randomElement(['Hair Cut', 'Beard Shaping', 'Other Services']),
             'start_time' => fake()->dateTimeBetween('now', '+1 month'),
             'duration' => fake()->numberBetween(15, 120),

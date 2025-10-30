@@ -10,11 +10,7 @@ use Illuminate\Support\Facades\Storage;
 
 class WhatsappWebhookController extends Controller
 {
-    /**
-     * GET /webhook/whatsapp
-     * Meta calls this once to verify your endpoint.
-     * Must echo hub.challenge (plain text) with HTTP 200 if the token matches.
-     */
+   
     public function verify(Request $request)
     {
         // Meta sends ?hub.mode=subscribe&hub.challenge=...&hub.verify_token=...
@@ -31,10 +27,7 @@ class WhatsappWebhookController extends Controller
         return response('Invalid verification token', 403);
     }
 
-    /**
-     * POST /webhook/whatsapp
-     * WhatsApp sends messages, statuses, etc. here.
-     */
+  
     public function handle(Request $request)
     {
         $data = $request->all();

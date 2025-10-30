@@ -19,66 +19,73 @@ class SendWhatsAppMessage extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
 
-        // Window for *tomorrow* in app timezone
-        $start = now()->tomorrow()->startOfDay();
-        $end   = now()->tomorrow()->endOfDay();
+        // Define two reminder windows
+        $windows = [
+            '3_days' => [now()->addDays(3)->startOfDay(), now()->addDays(3)->endOfDay()],
+            '1_day'  => [now()->addDay()->startOfDay(), now()->addDay()->endOfDay()],
+        ];
 
-        $this->info("Scanning appointments from {$start} to {$end}" . ($dryRun ? ' [DRY RUN]' : ''));
+        foreach ($windows as $label => [$start, $end]) {
+            $this->info("📅 Scanning {$label} appointments from {$start} to {$end}" . ($dryRun ? ' [DRY RUN]' : ''));
 
-        Appointment::with('client')
-            ->whereBetween('start_time', [$start, $end])
-            ->where('status', 'Scheduled')
-            ->orderBy('id')
-            ->chunkById(200, function ($appointments) use ($dryRun) {
-                foreach ($appointments as $appointment) {
-                    $client = $appointment->client;
-                    if (!$client || empty($client->phone)) {
-                        continue;
-                    }
+            Appointment::whereBetween('start_time', [$start, $end])
+                ->where('status', 'Scheduled')
+                ->orderBy('id')
+                ->chunkById(200, function ($appointments) use ($dryRun, $label) {
+                    foreach ($appointments as $appointment) {
+                        $to   = trim($appointment->client_phone);
+                        $name = $appointment->client_name ?: 'Customer';
 
-                    $to   = trim($client->phone);
-                    $name = $client->name ?: 'Customer';
-                    $time = optional($appointment->start_time)
-                        ? $appointment->start_time->timezone('Asia/Dhaka')->format('h:i A')
-                        : null;
-
-                    $template = Whatsapp::first()->message;
-
-                    $vars = [
-                        'name' => $name,
-                        'time' => $time,
-                    ];
-
-                    $message = preg_replace_callback('/\{\$(\w+)\}/', function ($matches) use ($vars) {
-                        return $vars[$matches[1]] ?? $matches[0]; // replace if found, else keep as-is
-                    }, $template);
-
-                    if ($dryRun) {
-                        $this->line("DRY RUN → Would send to {$to}: \"{$message}\"");
-                        continue;
-                    }
-
-                    try {
-                        $ok = $this->sendWhatsApp($to, $message);
-
-                        if ($ok) {
-                            $this->info("WhatsApp message sent to {$name} ({$to}) for {$time}");
-                        } else {
-                            $this->error("Failed to send message to {$name} ({$to})");
+                        if (empty($to)) {
+                            continue;
                         }
-                    } catch (\Throwable $e) {
-                        Log::error('WhatsApp send failed', [
-                            'appointment_id' => $appointment->id,
-                            'phone' => $to,
-                            'error' => $e->getMessage(),
-                        ]);
-                        $this->error("Exception sending message to {$name} ({$to})");
+
+                        $time = $appointment->start_time
+                            ? Carbon::parse($appointment->start_time)->timezone('Asia/Dhaka')->format('h:i A')
+                            : null;
+
+                        // Fetch WhatsApp message template
+                        $template = Whatsapp::first()?->message ?? 'Hello {$name}, your appointment is at {$time}.';
+
+                        // Inject dynamic variables
+                        $vars = [
+                            'name' => $name,
+                            'time' => $time,
+                            'days' => $label === '3_days' ? '3 days' : '1 day',
+                        ];
+
+                        $message = preg_replace_callback('/\{\$(\w+)\}/', function ($matches) use ($vars) {
+                            return $vars[$matches[1]] ?? $matches[0];
+                        }, $template);
+
+                        if ($dryRun) {
+                            $this->line("🧪 DRY RUN → Would send to {$to}: \"{$message}\" ({$label} reminder)");
+                            continue;
+                        }
+
+                        try {
+                            $ok = $this->sendWhatsApp($to, $message);
+
+                            if ($ok) {
+                                $this->info("✅ {$label} reminder sent to {$name} ({$to}) for {$time}");
+                            } else {
+                                $this->error("❌ Failed to send {$label} reminder to {$name} ({$to})");
+                            }
+                        } catch (\Throwable $e) {
+                            Log::error('WhatsApp send failed', [
+                                'appointment_id' => $appointment->id,
+                                'phone' => $to,
+                                'error' => $e->getMessage(),
+                            ]);
+                            $this->error("⚠️ Exception sending to {$name} ({$to})");
+                        }
                     }
-                }
-            });
+                });
+        }
 
         return self::SUCCESS;
     }
+
 
     private function sendWhatsApp(string $to, string $message): bool
     {
@@ -109,6 +116,7 @@ class SendWhatsAppMessage extends Command
 
             // Log *everything* Meta returns so we can diagnose quickly
             $json = $resp->json();
+
             Log::warning('WhatsApp send failed', [
                 'status' => $resp->status(),
                 'body'   => $json,

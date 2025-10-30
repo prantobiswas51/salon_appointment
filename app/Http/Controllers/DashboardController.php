@@ -15,8 +15,7 @@ class DashboardController extends Controller
         $today = $now->toDateString();
 
         // Get all today's appointments (one query)
-        $appointments = Appointment::with('client')
-            ->whereDate('start_time', $today)
+        $appointments = Appointment::whereDate('start_time', $today)
             ->orderBy('start_time')
             ->get();
 
@@ -32,22 +31,21 @@ class DashboardController extends Controller
 
         // Map for dashboard table
         $appointmentsData = $appointments->map(fn($a) => [
-            'id'          => $a->id,
-            'client_name' => $a->client->name ?? "",
-            'service'     => $a->service,
-            'start_time'  => $a->start_time->format('H:i'),
-            'duration'    => $a->duration,
-            'status'      => $a->status,
+            'id'           => $a->id,
+            'client_name'  => $a->client_name ?? "",
+            'client_phone' => $a->client_phone ?? "",
+            'service'      => $a->service,
+            'start_time'   => $a->start_time->format('H:i'),
+            'duration'     => $a->duration,
+            'status'       => $a->status,
         ]);
 
-        $allAppointments = Appointment::with('client')
-            ->orderBy('start_time')
-            ->get();
+        $allAppointments = Appointment::orderBy('start_time')->get();
 
         $calendarEvents = $allAppointments->map(function ($event) {
             return [
                 'id' => (string) $event->id,
-                'title' => ($event->client->name ?? 'Unknown') . ' - ' . $event->service,
+                'title' => ($event->client_name ?? 'Unknown') . ' - ' . $event->service,
                 'start' => $event->start_time->format('Y-m-d\TH:i:s'),
                 'end'   => $event->start_time->copy()->addMinutes($event->duration)->format('Y-m-d\TH:i:s'),
                 'backgroundColor' => match ($event->status) {
@@ -68,35 +66,36 @@ class DashboardController extends Controller
                 },
                 'extendedProps' => [
                     'appointmentId' => $event->id,
-                    'clientName' => $event->client->name ?? 'Unknown',
-                    'service' => $event->service,
-                    'status' => $event->status,
-                    'duration' => (int) $event->duration,
+                    'clientName'    => $event->client_name ?? 'Unknown',
+                    'clientPhone'   => $event->client_phone ?? '',
+                    'service'       => $event->service,
+                    'status'        => $event->status,
+                    'duration'      => (int) $event->duration,
                 ],
             ];
         });
-
-        // dd($calendarEvents);
 
         return inertia('Dashboard', [
             'appointments' => $appointmentsData,
 
             'inProgress' => $inProgress ? [
-                'id'          => $inProgress->id,
-                'client_name' => $inProgress->client->name ?? "",
-                'service'     => $inProgress->service,
-                'start_time'  => $inProgress->start_time->format('H:i'),
-                'duration'    => $inProgress->duration,
-                'status'      => $inProgress->status,
+                'id'           => $inProgress->id,
+                'client_name'  => $inProgress->client_name ?? "",
+                'client_phone' => $inProgress->client_phone ?? "",
+                'service'      => $inProgress->service,
+                'start_time'   => $inProgress->start_time->format('H:i'),
+                'duration'     => $inProgress->duration,
+                'status'       => $inProgress->status,
             ] : null,
 
             'nextAppointment' => $nextAppointment ? [
-                'id'          => $nextAppointment->id,
-                'client_name' => $nextAppointment->client->name ?? "",
-                'service'     => $nextAppointment->service,
-                'start_time'  => $nextAppointment->start_time->format('H:i'),
-                'duration'    => $nextAppointment->duration,
-                'status'      => $nextAppointment->status,
+                'id'           => $nextAppointment->id,
+                'client_name'  => $nextAppointment->client_name ?? "",
+                'client_phone' => $nextAppointment->client_phone ?? "",
+                'service'      => $nextAppointment->service,
+                'start_time'   => $nextAppointment->start_time->format('H:i'),
+                'duration'     => $nextAppointment->duration,
+                'status'       => $nextAppointment->status,
             ] : null,
 
             'countToday' => $appointments->count(),

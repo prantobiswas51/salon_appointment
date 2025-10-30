@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 type Appointment = {
     id: number;
     client_name: string;
+    client_phone: string;
     service: string;
     start_time: string;
     duration: number;
@@ -60,7 +61,7 @@ export default function Dashboard({
     const handleSync = async () => {
         setSyncLoading(true);
         setSyncMessage('');
-        
+
         try {
             const response = await fetch('/calendar/events', {
                 method: 'GET',
@@ -69,18 +70,18 @@ export default function Dashboard({
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 const { created, updated, errors } = result.results;
                 let message = `Sync completed! `;
                 if (created > 0) message += `${created} created, `;
                 if (updated > 0) message += `${updated} updated, `;
                 if (errors.length > 0) message += `${errors.length} errors`;
-                
+
                 setSyncMessage(message.replace(/,\s*$/, ''));
-                
+
                 // Refresh the page to show updated data
                 setTimeout(() => {
                     router.reload();
@@ -99,10 +100,8 @@ export default function Dashboard({
     const flash = (page.props as any)?.flash || {};
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        client_number: "",
-        email: "",
-        new_client_name: "",
-        new_client_phone: "",
+        client_name: "",
+        client_phone: "",
         service: "",
         start_time: "",
         duration: "",
@@ -223,23 +222,21 @@ export default function Dashboard({
                         <button
                             onClick={handleSync}
                             disabled={syncLoading}
-                            className={`px-3 py-1 flex items-center text-white rounded transition-colors ${
-                                syncLoading 
-                                    ? 'bg-gray-400 cursor-not-allowed' 
+                            className={`px-3 py-1 flex items-center text-white rounded transition-colors ${syncLoading
+                                    ? 'bg-gray-400 cursor-not-allowed'
                                     : 'bg-blue-500 hover:bg-blue-600'
-                            }`}
+                                }`}
                         >
                             <RefreshCcw className={`mr-2 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
                             {syncLoading ? 'Syncing...' : 'Sync'}
                         </button>
                     </div>
-                    
+
                     {syncMessage && (
-                        <div className={`mb-4 p-3 rounded-md ${
-                            syncMessage.includes('failed') || syncMessage.includes('error')
+                        <div className={`mb-4 p-3 rounded-md ${syncMessage.includes('failed') || syncMessage.includes('error')
                                 ? 'bg-red-100 text-red-700 border border-red-200'
                                 : 'bg-green-100 text-green-700 border border-green-200'
-                        }`}>
+                            }`}>
                             {syncMessage}
                         </div>
                     )}
@@ -278,113 +275,39 @@ export default function Dashboard({
                   max-h-[90vh] overflow-y-auto p-6">
                         <h2 className="text-xl font-bold mb-4">Edit Appointment</h2>
 
-                        {/* Tabs */}
-                        <div className="flex space-x-4 mb-6">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setActiveTab("new");
-                                    setData({
-                                        client_number: "",
-                                        email: "",
-                                        new_client_name: "",
-                                        new_client_phone: "",
-                                        service: "",
-                                        duration: "",
-                                        start_time: data.start_time,
-                                        status: "Scheduled",
-                                        notes: "",
-                                    });
-                                }}
-                                className={`px-4 py-2 rounded ${activeTab === "new"
-                                    ? "bg-pink-600 text-white"
-                                    : "bg-gray-200 text-gray-700"
-                                    }`}
-                            >
-                                New Client
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setActiveTab("existing");
-                                    setData({
-                                        client_number: "",
-                                        email: "",
-                                        new_client_name: "",
-                                        new_client_phone: "",
-                                        service: "",
-                                        duration: "",
-                                        start_time: data.start_time,
-                                        status: "Scheduled",
-                                        notes: "",
-                                    });
-                                }}
-                                className={`px-4 py-2 rounded ${activeTab === "existing"
-                                    ? "bg-pink-600 text-white"
-                                    : "bg-gray-200 text-gray-700"
-                                    }`}
-                            >
-                                Existing Client
-                            </button>
-                        </div>
-
+                        
                         {/* FORM */}
                         <form onSubmit={submit} className="space-y-4">
-                            {activeTab === "existing" ? (
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block mb-1">Client Number</label>
+                                    <label className="block mb-1">Client Name</label>
                                     <input
                                         type="text"
-                                        placeholder="e.g. +1 848 648 8448"
-                                        className="w-full border p-2 rounded"
-                                        value={data.client_number}
-                                        onChange={(e) => setData("client_number", e.target.value)}
+                                        className="w-full border bg-white p-2 rounded"
+                                        placeholder="e.g. John"
+                                        value={data.client_name}
+                                        onChange={(e) => setData("client_name", e.target.value)}
                                     />
-                                    {errors.client_number && (
-                                        <p className="text-red-500">{errors.client_number}</p>
+                                    {errors.client_name && (
+                                        <p className="text-red-500">{errors.client_name}</p>
                                     )}
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block mb-1">Client Name</label>
-                                        <input
-                                            type="text"
-                                            className="w-full border p-2 rounded"
-                                            placeholder="e.g. John"
-                                            value={data.new_client_name}
-                                            onChange={(e) => setData("new_client_name", e.target.value)}
-                                        />
-                                        {errors.new_client_name && (
-                                            <p className="text-red-500">{errors.new_client_name}</p>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label className="block mb-1">Client Phone</label>
-                                        <input
-                                            type="tel"
-                                            className="w-full border p-2 rounded"
-                                            placeholder="e.g. +2 485 485 744"
-                                            value={data.new_client_phone}
-                                            onChange={(e) => setData("new_client_phone", e.target.value)}
-                                        />
-                                        {errors.new_client_phone && (
-                                            <p className="text-red-500">{errors.new_client_phone}</p>
-                                        )}
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block mb-1">Email</label>
-                                        <input
-                                            type="email"
-                                            className="w-full border p-2 rounded"
-                                            placeholder="clientmail@domain.com"
-                                            value={data.email}
-                                            onChange={(e) => setData("email", e.target.value)}
-                                        />
-                                        {errors.email && <p className="text-red-500">{errors.email}</p>}
-                                    </div>
+                                <div>
+                                    <label className="block mb-1">Client Phone</label>
+                                    <input
+                                        type="tel"
+                                        className="w-full border bg-white p-2 rounded"
+                                        placeholder="e.g. +2 485 485 744"
+                                        value={data.client_phone}
+                                        onChange={(e) => setData("client_phone", e.target.value)}
+                                    />
+                                    {errors.client_phone && (
+                                        <p className="text-red-500">{errors.client_phone}</p>
+                                    )}
                                 </div>
-                            )}
+                            </div>
+
 
                             <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                 {/* Service */}
@@ -393,7 +316,7 @@ export default function Dashboard({
                                     <select
                                         value={data.service}
                                         onChange={(e) => setData("service", e.target.value)}
-                                        className="w-full border p-2 rounded dark:bg-gray-900"
+                                        className="w-full border bg-white p-2 rounded dark:bg-gray-900"
                                     >
                                         <option value="">Select</option>
                                         <option value="Hair Cut">Hair Cut</option>
@@ -407,7 +330,7 @@ export default function Dashboard({
                                     <label className="block mb-1">Duration (Minutes)</label>
                                     <input
                                         type="number"
-                                        className="w-full border p-2 rounded"
+                                        className="w-full border bg-white p-2 rounded"
                                         placeholder="30"
                                         value={data.duration}
                                         onChange={(e) => setData("duration", e.target.value)}
@@ -421,7 +344,7 @@ export default function Dashboard({
                                 <label className="block mb-1">Appointment Time</label>
                                 <input
                                     type="datetime-local"
-                                    className="w-full border p-2 rounded"
+                                    className="w-full border bg-white p-2 rounded"
                                     value={data.start_time}
                                     onChange={(e) => setData("start_time", e.target.value)}
                                 />
@@ -438,7 +361,7 @@ export default function Dashboard({
                                 <select
                                     value={data.status}
                                     onChange={(e) => setData("status", e.target.value)}
-                                    className="w-full border p-2 rounded dark:bg-gray-900"
+                                    className="w-full border bg-white p-2 rounded dark:bg-gray-900"
                                 >
                                     <option value="Scheduled">Scheduled</option>
                                     <option value="Confirmed">Confirmed</option>
@@ -451,7 +374,7 @@ export default function Dashboard({
                             <div>
                                 <label className="block mb-1">Notes</label>
                                 <textarea
-                                    className="w-full border p-2 rounded"
+                                    className="w-full border bg-white p-2 rounded"
                                     value={data.notes}
                                     onChange={(e) => setData("notes", e.target.value)}
                                 />

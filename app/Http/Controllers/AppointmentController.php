@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use Inertia\Inertia;
-use App\Models\Client;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use function Pest\Laravel\json;
@@ -21,7 +20,7 @@ class AppointmentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Appointment::with('client');
+        $query = Appointment::latest();
 
         // Search functionality
         if ($request->filled('q')) {
@@ -30,11 +29,8 @@ class AppointmentController extends Controller
                 $q->where('service', 'LIKE', "%{$searchTerm}%")
                     ->orWhere('notes', 'LIKE', "%{$searchTerm}%")
                     ->orWhere('status', 'LIKE', "%{$searchTerm}%")
-                    ->orWhereHas('client', function ($clientQuery) use ($searchTerm) {
-                        $clientQuery->where('name', 'LIKE', "%{$searchTerm}%")
-                            ->orWhere('phone', 'LIKE', "%{$searchTerm}%")
-                            ->orWhere('email', 'LIKE', "%{$searchTerm}%");
-                    });
+                    ->orWhere('client_name', 'LIKE', "%{$searchTerm}%")
+                    ->orWhere('client_phone', 'LIKE', "%{$searchTerm}%");
             });
         }
 
@@ -80,6 +76,7 @@ class AppointmentController extends Controller
         ]);
     }
 
+
     public function events()
     {
         try {
@@ -96,7 +93,7 @@ class AppointmentController extends Controller
                 if (!$calendarService->isConfigured()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Google Calendar credentials not found. Please check your Google credentials configuration.',
+                        'message' => 'Google Calendar credentials not found.',
                         'results' => $syncResults
                     ]);
                 }
@@ -121,25 +118,10 @@ class AppointmentController extends Controller
                     ]);
                 }
             } catch (\Exception $e) {
-                try {
-                    $googleEvents = \Spatie\GoogleCalendar\Event::get();
-                } catch (\Exception $spatieException) {
-                    $errorMessage = $spatieException->getMessage();
-                    if (strpos($errorMessage, 'SSL certificate problem') !== false || strpos($errorMessage, 'cURL error 60') !== false) {
-                        $errorMessage = 'SSL Certificate Error: Add GOOGLE_SSL_VERIFY=false to your .env file to bypass SSL verification in development.';
-                    }
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => $errorMessage,
-                        'results' => $syncResults
-                    ]);
-                }
+                $googleEvents = \Spatie\GoogleCalendar\Event::get();
             }
 
-            // ---- Parse and Sync Events ----
             if (empty($googleEvents) || $googleEvents->isEmpty()) {
-                $syncResults['errors'][] = 'No Google Calendar events found to sync';
                 return response()->json([
                     'success' => false,
                     'message' => 'No events found',
@@ -147,9 +129,10 @@ class AppointmentController extends Controller
                 ]);
             }
 
+            // ---- Sync Google Events with Appointments ----
             foreach ($googleEvents as $event) {
                 try {
-                    // Parse event name -> "Client - Service - Phone"
+                    // Format: "Client - Service - Phone"
                     $eventName = $event->summary ?? '';
                     $clientName = null;
                     $serviceName = $eventName;
@@ -166,7 +149,7 @@ class AppointmentController extends Controller
                         $serviceName = trim($parts[1]);
                     }
 
-                    $appointment = \App\Models\Appointment::with('client')->where('event_id', $event->id)->first();
+                    $appointment = \App\Models\Appointment::where('event_id', $event->id)->first();
 
                     $startTime = $event->startDateTime ?? $event->start ?? null;
                     $endTime = $event->endDateTime ?? $event->end ?? null;
@@ -174,7 +157,7 @@ class AppointmentController extends Controller
                     if (!$startTime) {
                         $syncResults['errors'][] = [
                             'event_id' => $event->id,
-                            'error' => 'Event missing start time'
+                            'error' => 'Missing start time'
                         ];
                         continue;
                     }
@@ -183,84 +166,24 @@ class AppointmentController extends Controller
                     $end = $endTime ? \Carbon\Carbon::parse($endTime)->timezone('UTC') : $start->copy()->addHour();
                     $duration = $start->diffInMinutes($end);
 
+                    // ---- Create or Update Appointment ----
+                    $data = [
+                        'client_name' => $clientName,
+                        'client_phone' => $phone,
+                        'service' => $serviceName,
+                        'start_time' => $start,
+                        'duration' => $duration,
+                        'status' => 'confirmed',
+                        'attendance_status' => 'pending',
+                        'event_id' => $event->id,
+                    ];
+
                     if (!$appointment) {
-                        $clientId = null;
-
-                        if ($clientName && $phone) {
-                            $client = \App\Models\Client::where('phone', $phone)->first();
-
-                            if ($client) {
-                                if (empty($client->name) || strtolower($client->name) !== strtolower($clientName)) {
-                                    $client->update(['name' => $clientName]);
-                                }
-                            } else {
-                                $client = \App\Models\Client::create([
-                                    'name' => $clientName,
-                                    'phone' => $phone,
-                                    'status' => 'Green',
-                                ]);
-                            }
-
-                            $clientId = $client->id;
-                        }
-
-                        \App\Models\Appointment::create([
-                            'client_id' => $clientId,
-                            'service' => $serviceName,
-                            'start_time' => $start,
-                            'duration' => $duration,
-                            'status' => 'confirmed',
-                            'attendance_status' => 'pending',
-                            'event_id' => $event->id,
-                        ]);
-
+                        \App\Models\Appointment::create($data);
                         $syncResults['created']++;
                     } else {
-                        $needsUpdate = false;
-                        $updateData = [];
-
-                        if ($appointment->start_time->format('Y-m-d H:i:s') !== $start->format('Y-m-d H:i:s')) {
-                            $updateData['start_time'] = $start;
-                            $needsUpdate = true;
-                        }
-
-                        if ($appointment->duration != $duration) {
-                            $updateData['duration'] = $duration;
-                            $needsUpdate = true;
-                        }
-
-                        if ($appointment->service !== $serviceName) {
-                            $updateData['service'] = $serviceName;
-                            $needsUpdate = true;
-                        }
-
-                        if ($clientName) {
-                            $currentClient = $appointment->client;
-                            if (!$currentClient || strtolower($currentClient->name) !== strtolower($clientName)) {
-                                $client = \App\Models\Client::whereRaw('LOWER(name) = LOWER(?)', [$clientName])->first();
-
-                                if (!$client) {
-                                    $client = \App\Models\Client::create([
-                                        'name' => $clientName,
-                                        'phone' => $phone,
-                                        'status' => 'Green'
-                                    ]);
-                                }
-
-                                $updateData['client_id'] = $client->id;
-                                $needsUpdate = true;
-                            }
-                        } else {
-                            if ($appointment->client_id !== null) {
-                                $updateData['client_id'] = null;
-                                $needsUpdate = true;
-                            }
-                        }
-
-                        if ($needsUpdate) {
-                            $appointment->update($updateData);
-                            $syncResults['updated']++;
-                        }
+                        $appointment->update($data);
+                        $syncResults['updated']++;
                     }
                 } catch (\Exception $e) {
                     $syncResults['errors'][] = [
@@ -270,18 +193,11 @@ class AppointmentController extends Controller
                 }
             }
 
-            // ---- Return Sync Results ----
-            if (!empty($syncResults['errors'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Sync completed with some errors',
-                    'results' => $syncResults
-                ]);
-            }
-
             return response()->json([
-                'success' => true,
-                'message' => 'Calendar sync completed successfully',
+                'success' => empty($syncResults['errors']),
+                'message' => empty($syncResults['errors'])
+                    ? 'Calendar sync completed successfully'
+                    : 'Sync completed with some errors',
                 'results' => $syncResults
             ]);
         } catch (\Exception $e) {
@@ -293,7 +209,6 @@ class AppointmentController extends Controller
         }
     }
 
-
     public function create()
     {
         return Inertia::render('appointment/create');
@@ -302,51 +217,47 @@ class AppointmentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'client_number'     => 'nullable|string',
-            'new_client_name'   => 'nullable|string',
-            'new_client_phone'  => 'nullable|string',
-            'email'             => 'nullable|email',
-            'service'           => 'required|in:Hair Cut,Beard Shaping,Other Services',
-            'start_time'        => 'required|date',
-            'duration'          => 'required|integer|min:5',
-            'status'            => 'required|in:Scheduled,Confirmed,Canceled',
-            'notes'             => 'nullable|string',
+            'client_name'   => 'nullable|string',
+            'client_phone'  => 'nullable|string',
+            'service'       => 'required|in:Hair Cut,Beard Shaping,Other Services',
+            'start_time'    => 'required|date',
+            'duration'      => 'required|integer|min:5',
+            'status'        => 'required|in:Scheduled,Confirmed,Canceled',
+            'notes'         => 'nullable|string',
         ]);
 
-        // normalize start/end
         $start = Carbon::parse($request->start_time);
         $end = (clone $start)->addMinutes((int) $request->duration);
 
-        // find or create client
-        $client = Client::firstOrCreate(
-            ['phone' => $request->client_number ?? $request->new_client_phone],
-            ['name' => $request->new_client_name, 'email' => $request->email]
-        );
-
-        $event = Event::create([
-            'name' => $client->name . ' - ' . $request->service,
+        // Create Google Calendar Event (format: "Name - Service - Phone")
+        $eventTitle = trim($request->client_name . ' - ' . $request->service . ' - ' . $request->client_phone, ' -');
+        $event = \Spatie\GoogleCalendar\Event::create([
+            'name' => $eventTitle,
             'startDateTime' => $start,
-            'endDateTime'   => $end,
+            'endDateTime' => $end,
         ]);
 
-        // save it in your DB
+        // Save appointment locally
         $appointment = new Appointment();
-        $appointment->event_id   = $event->id;
-        $appointment->client_id  = $client->id;
-        $appointment->service    = $request->service;
-        $appointment->duration   = $request->duration;
-        $appointment->start_time = $start;
-        $appointment->status     = $request->status;
-        $appointment->notes      = $request->notes;
+        $appointment->event_id      = $event->id;
+        $appointment->client_name   = $request->client_name;
+        $appointment->client_phone  = $request->client_phone;
+        $appointment->service       = $request->service;
+        $appointment->duration      = $request->duration;
+        $appointment->start_time    = $start;
+        $appointment->status        = $request->status;
+        $appointment->notes         = $request->notes;
         $appointment->save();
 
         return redirect()->back()->with('success', 'Appointment created successfully!');
     }
 
+
     public function update(Request $request, Appointment $appointment)
     {
         $request->validate([
-            'client_id'         => ['nullable', 'integer', 'exists:clients,id'],
+            'client_name'       => ['nullable', 'string', 'max:255'],
+            'client_phone'      => ['required', 'string', 'max:20'],
             'service'           => ['required', 'string', 'max:255'],
             'duration'          => ['nullable', 'numeric', 'max:120'],
             'attendance_status' => ['nullable', 'string', 'max:50'],
@@ -354,44 +265,13 @@ class AppointmentController extends Controller
             'status'            => ['required', 'string', 'max:50'],
             'reminder_sent'     => ['nullable', 'date'],
             'notes'             => ['nullable', 'string'],
-
-            'event_id'          => ['required', 'string'],
-            'client_name'       => ['nullable', 'string'],
-            'client_phone'      => ['required', 'string'],
-            'client_email'      => ['nullable', 'email'],
+            'event_id'          => ['nullable', 'string'],
         ]);
 
-        // Update the existing client if client_id is provided, otherwise find by phone or create new
-        if ($request->filled('client_id')) {
-            // Use the existing client from the appointment
-            $client = Client::findOrFail($request->client_id);
-            $client->update([
-                'name'  => $request->client_name,
-                'phone' => $request->client_phone,
-                'email' => $request->client_email,
-            ]);
-        } else {
-            // Find by phone or create new client (fallback for appointments without client_id)
-            $client = Client::where('phone', $request->client_phone)->first();
-
-            if ($client) {
-                $client->update([
-                    'name'  => $request->client_name,
-                    'phone' => $request->client_phone,
-                    'email' => $request->client_email,
-                ]);
-            } else {
-                $client = Client::create([
-                    'name'  => $request->client_name,
-                    'phone' => $request->client_phone,
-                    'email' => $request->client_email,
-                ]);
-            }
-        }
-
-        // update appointment
+        // Update appointment record
         $appointment->update([
-            'client_id'         => $client->id,
+            'client_name'       => $request->client_name,
+            'client_phone'      => $request->client_phone,
             'service'           => $request->service,
             'duration'          => $request->duration,
             'attendance_status' => $request->attendance_status,
@@ -402,25 +282,32 @@ class AppointmentController extends Controller
             'event_id'          => $request->event_id,
         ]);
 
-        // update related event if exists
+        // Update linked Google Calendar event (if exists)
         if ($appointment->event_id) {
-            $event = Event::find($appointment->event_id);
+            try {
+                $event = \Spatie\GoogleCalendar\Event::find($appointment->event_id);
 
-            if ($event) {
-                $event->name = $client->name . ' - ' . $appointment->service;
+                if ($event) {
+                    $eventTitle = trim($appointment->client_name . ' - ' . $appointment->service . ' - ' . $appointment->client_phone, ' -');
+                    $start = Carbon::parse($appointment->start_time);
+                    $duration = (int)($appointment->duration ?? 30);
 
-                $start = Carbon::parse($appointment->start_time);
-                $duration = (int) ($appointment->duration ?? 30);
-
-                $event->startDateTime = $start;
-                $event->endDateTime   = (clone $start)->addMinutes($duration);
-
-                $event->save();
+                    $event->name = $eventTitle;
+                    $event->startDateTime = $start;
+                    $event->endDateTime = (clone $start)->addMinutes($duration);
+                    $event->save();
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to update Google event', [
+                    'event_id' => $appointment->event_id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
         return back(303)->with('success', 'Appointment updated successfully.');
     }
+
 
     public function destroy(int $id): RedirectResponse
     {

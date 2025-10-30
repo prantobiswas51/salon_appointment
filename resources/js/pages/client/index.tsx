@@ -1,26 +1,23 @@
-
 import React, { useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { FilePen, Search, Trash } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { router } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Clients',
-        href: '/clients',
+        title: 'Appointments',
+        href: '/appointments',
     },
 ];
 
-type Client = {
+type Appointment = {
     id: number;
-    name: string;
-    phone: string;
-    email?: string;
-    dob?: string;
-    notes?: string;
-    status?: string;
+    service: string;
+    status: string;
+    start_time: string;
+    client_name: string;
+    client_phone: string;
 };
 
 type Paginated<T> = {
@@ -33,217 +30,88 @@ type Paginated<T> = {
 };
 
 export default function Index() {
-    const { clients } = usePage<{ clients: Paginated<Client> }>().props;
+    const { appointments, filters = {} } = usePage<{
+        appointments: Paginated<Appointment>;
+        filters?: any;
+    }>().props;
 
-    const [isModalOpen, setModalOpen] = useState(false);
-    const [editingClient, setEditingClient] = useState<Client | null>(null);
+    const [search, setSearch] = useState(filters?.q ?? '');
 
-    const openModal = (client: Client) => {
-        setEditingClient(client);
-        setModalOpen(true);
-    };
 
-    const deleteClient = (clientId: number) => {
-        if (confirm('Are you sure you want to delete this client?')) {
-            router.delete(route('client.destroy', clientId));
-        }
-    };
-
-    const closeModal = () => {
-        setModalOpen(false);
-        setEditingClient(null);
-    };
-
-    const handleUpdateClient = (e: React.FormEvent) => {
+    const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (editingClient) {
-            // Use Inertia.put() for a PUT request
-            router.put(route('client.update', editingClient.id), {
-                ...editingClient,
-            });
-
-            closeModal(); // Close modal after updating
-        }
+        router.get(
+            '/appointments',
+            { q: search },
+            { preserveState: true, replace: true }
+        );
     };
-
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Clients" />
-            <div className="p-2 m-4">
-                <h1 className="text-2xl font-bold mb-4">Clients</h1>
+            <Head title="Appointments" />
 
-                {/* Search form */}
-                <form action="" method="get" className="mb-4 flex flex-col sm:flex-row gap-2">
+            <div className="p-4">
+                {/* Search Bar */}
+                <form
+                    onSubmit={handleSearch}
+                    className="flex items-center gap-2 mb-4"
+                >
                     <input
                         type="text"
-                        placeholder="Search by name, phone, email"
-                        className="border p-2 px-4 w-full sm:min-w-[300px] rounded-md"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search appointments..."
+                        className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring focus:ring-indigo-200"
                     />
                     <button
                         type="submit"
-                        className="border flex items-center justify-center rounded-md p-2 bg-pink-600 text-white"
+                        className="bg-indigo-600 text-white p-2 rounded-lg flex items-center gap-1 hover:bg-indigo-700"
                     >
-                        <Search className="w-4 h-4" /> <span className="ml-1">Search</span>
+                        <Search size={16} />
+                        Search
                     </button>
                 </form>
 
-                {/* ✅ Desktop table view */}
-                <div className="hidden lg:block overflow-x-auto">
-                    <table className="w-full border-gray-300 rounded-lg shadow-md text-sm text-left">
-                        <thead className="text-gray-900 uppercase bg-pink-300">
+                {/* Table */}
+                <div className="overflow-x-auto border rounded-lg">
+                    <table className="min-w-full text-sm text-left">
+                        <thead className="bg-gray-100 text-gray-600 uppercase">
                             <tr>
-                                <th className="px-6 py-3 border-b">Id</th>
-                                <th className="px-6 py-3 border-b">Name</th>
-                                <th className="px-6 py-3 border-b">Phone</th>
-                                <th className="px-6 py-3 border-b">Status</th>
-                                <th className="px-6 py-3 border-b">Actions</th>
+                                <th className="px-4 py-2">Service</th>
+                                <th className="px-4 py-2">Client Name</th>
+                                <th className="px-4 py-2">Client Phone</th>
+                                <th className="px-4 py-2">Status</th>
+                                <th className="px-4 py-2">Date</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {clients.data.map((client) => (
-                                <tr key={client.id} className="hover:bg-gray-50 transition">
-                                    <td className="px-6 py-4 border-b">{client.id}</td>
-                                    <td className="px-6 py-4 border-b">{client.name}</td>
-                                    <td className="px-6 py-4 border-b">{client.phone}</td>
-                                    <td className="px-6 py-4 border-b">
-                                        {client.status === 'Red' ? <span className="text-red-600 bg-red-200/50 p-2 rounded-md">{client.status}</span> : client.status === 'Green' ?
-                                            <span className="text-green-600 bg-green-200/50 p-2 rounded-md">{client.status}</span> : <span className="text-yellow-600 bg-yellow-200/50 p-2 rounded-md">{client.status}</span>}
-                                    </td>
-                                    <td className="px-6 py-4 border-b flex items-center space-x-3">
-                                        <FilePen
-                                            className="text-amber-500 hover:text-amber-600 cursor-pointer"
-                                            onClick={() => openModal(client)}
-                                        />
-                                        <Trash onClick={() => deleteClient(client.id)} className="text-red-500 hover:text-red-600 cursor-pointer" />
+                            {appointments.data.length ? (
+                                appointments.data.map((a) => (
+                                    <tr
+                                        key={a.id}
+                                        className="border-t hover:bg-gray-50 transition"
+                                    >
+                                        <td className="px-4 py-2">{a.service}</td>
+                                        <td className="px-4 py-2">{a.client_name}</td>
+                                        <td className="px-4 py-2">{a.client_phone}</td>
+                                        <td className="px-4 py-2">{a.status}</td>
+                                        <td className="px-4 py-2">
+                                            {new Date(a.start_time).toLocaleString()}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={5} className="text-center py-4 text-gray-500">
+                                        No appointments found.
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
-
-                {/* ✅ Mobile card view */}
-                <div className="block lg:hidden space-y-4">
-                    {clients.data.map((client) => (
-                        <div
-                            key={client.id}
-                            className="bg-white dark:bg-gray-900  shadow-md rounded-md p-4 border space-y-2"
-                        >
-                            <div className="flex justify-between">
-                                <span className="font-bold text-gray-500">{client.name}</span>
-                                <span className="text-sm text-gray-500">ID: {client.id}</span>
-                            </div>
-                            <p className="text-gray-500 text-sm">📞 {client.phone}</p>
-                            <p className="text-gray-500 text-sm">Status: {client.status}</p>
-                            <div className="flex space-x-3 pt-2">
-                                <FilePen
-                                    className="text-amber-500 hover:text-amber-600 cursor-pointer"
-                                    onClick={() => openModal(client)}
-                                />
-                                <Trash className="text-red-500 hover:text-red-600 cursor-pointer" />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Modal (same for all views) */}
-                {isModalOpen && editingClient && (
-                    <div className="fixed inset-0 bg-gray-700/40 flex justify-center items-center p-4 z-50">
-                        <div className="bg-sky-100 dark:bg-sky-950 w-full max-w-md p-6 rounded-md shadow-lg">
-                            <h2 className="text-xl font-bold mb-4">Edit Client</h2>
-                            <form onSubmit={handleUpdateClient} className="space-y-4">
-                                {/* Name */}
-                                <div>
-                                    <label className="block mb-2">Name <span className='text-red-600'>*</span></label>
-                                    <input
-                                        type="text" required
-                                        className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.name}
-                                        onChange={(e) =>
-                                            setEditingClient({ ...editingClient, name: e.target.value })
-                                        }
-                                    />
-                                </div>
-
-                                {/* Phone */}
-                                <div>
-                                    <label className="block mb-2">Phone <span className='text-red-600'>*</span></label>
-                                    <input
-                                        type="text" required
-                                        className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.phone}
-                                        onChange={(e) =>
-                                            setEditingClient({ ...editingClient, phone: e.target.value })
-                                        }
-                                    />
-                                </div>
-
-                                {/* Status */}
-                                <div>
-                                    <label className="block mb-2">Status <span className='text-red-600'>*</span></label>
-                                    <select
-                                        className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.status || ""}
-                                        onChange={(e) =>
-                                            setEditingClient({ ...editingClient, status: e.target.value })
-                                        }
-                                    >
-                                        <option value="Red">Red</option>
-                                        <option value="Green">Green</option>
-                                        <option value="Yellow">Yellow</option>
-                                    </select>
-                                </div>
-
-                                {/* DOB */}
-                                <div>
-                                    <label className="block mb-2">Date of Birth</label>
-                                    <input
-                                        type="date"
-                                        className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.dob || ""}
-                                        onChange={(e) =>
-                                            setEditingClient({ ...editingClient, dob: e.target.value })
-                                        }
-                                    />
-                                </div>
-
-
-                                {/* Notes */}
-                                <div>
-                                    <label className="block mb-2">Notes</label>
-                                    <textarea
-                                        className="border p-2 rounded-md w-full dark:border-gray-100"
-                                        value={editingClient.notes || ""}
-                                        onChange={(e) =>
-                                            setEditingClient({ ...editingClient, notes: e.target.value })
-                                        }
-                                    />
-                                </div>
-
-                                {/* Buttons */}
-                                <div className="flex justify-end space-x-2">
-                                    <button
-                                        type="button"
-                                        className="border px-4 py-2 rounded-md text-gray-500"
-                                        onClick={closeModal}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-md"
-                                    >
-                                        Save Changes
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
             </div>
         </AppLayout>
-
     );
 }
