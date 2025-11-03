@@ -44,13 +44,13 @@ class ReminderController extends Controller
             try {
                 // WhatsApp API URL
                 $url = sprintf(
-                    'https://graph.facebook.com/%s/%s/messages','v22.0',751438628057967
+                    'https://graph.facebook.com/%s/%s/messages','v22.0',821517547705035
                 );
 
                 // Payload for WhatsApp message
                 $payload = [
                     'messaging_product' => 'whatsapp',
-                    'to'       => '+8801823744169',
+                    'to'       => $phone,
                     'type'     => 'template',
                     'template' => [
                         'name'     => 'appointment_reminder',

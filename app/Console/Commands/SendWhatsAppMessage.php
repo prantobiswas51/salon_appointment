@@ -34,8 +34,6 @@ class SendWhatsAppMessage extends Command
                 ->chunkById(200, function ($appointments) use ($dryRun, $label) {
                     foreach ($appointments as $appointment) {
                         $to   = $appointment->client_phone;
-
-                        dd( $to );
                         $name = $appointment->client_name ?: 'Customer';
 
                         if (empty($to)) {
@@ -66,7 +64,7 @@ class SendWhatsAppMessage extends Command
                         }
 
                         try {
-                            $ok = $this->sendWhatsApp($to, $message);
+                            $ok = $this->sendWhatsApp($to, $message, $name, $time);
 
                             if ($ok) {
                                 $this->info("✅ {$label} reminder sent to {$name} ({$to}) for {$time}");
@@ -89,21 +87,43 @@ class SendWhatsAppMessage extends Command
     }
 
 
-    private function sendWhatsApp(string $to, string $message): bool
+    private function sendWhatsApp(string $to, string $message, ?string $name = null, ?string $time = null): bool
     {
-
         $whatsapp = Whatsapp::first();
+
+        if (!$whatsapp || !$whatsapp->token || !$whatsapp->number_id) {
+            Log::error('WhatsApp credentials are missing.');
+            return false;
+        }
 
         $token         = $whatsapp->token;
         $phoneNumberId = $whatsapp->number_id;
 
+        // Prepare dynamic parameters for the template
+        $clientName      = $name ?? 'Customer';
+        $appointmentTime = $time ?? '';
+
+        // WhatsApp Cloud API endpoint
         $url = "https://graph.facebook.com/v23.0/{$phoneNumberId}/messages";
 
+        // Prepare the WhatsApp template payload
         $payload = [
             'messaging_product' => 'whatsapp',
-            'to'   => $to,
-            'type' => 'text',
-            'text' => ['body' => $message],
+            'to'                => $to,
+            'type'              => 'template',
+            'template'          => [
+                'name'     => 'appointment_reminder', // 👈 your template name
+                'language' => ['code' => 'it'],       // adjust to your template language
+                'components' => [
+                    [
+                        'type'       => 'body',
+                        'parameters' => [
+                            ['type' => 'text', 'text' => $clientName],
+                            ['type' => 'text', 'text' => $appointmentTime],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         try {
@@ -113,19 +133,17 @@ class SendWhatsAppMessage extends Command
                 ->post($url, $payload);
 
             if ($resp->successful()) {
+                Log::info("WhatsApp message sent to {$to} ({$clientName})");
                 return true;
             }
 
-            // Log *everything* Meta returns so we can diagnose quickly
             $json = $resp->json();
-
             Log::warning('WhatsApp send failed', [
                 'status' => $resp->status(),
                 'body'   => $json,
                 'to'     => $to,
             ]);
 
-            // If you’re calling this from a console command, you can echo a short reason:
             if (method_exists($this, 'error')) {
                 $reason = $json['error']['message'] ?? 'Unknown error';
                 $code   = $json['error']['code']    ?? 'n/a';
