@@ -26,8 +26,8 @@ class ReminderController extends Controller
             ->get();
 
         foreach ($appointments as $appointment) {
-            $phone = $appointment->client->phone;
-            $clientName = $appointment->client->name;
+            $phone = $appointment->client_phone;
+            $clientName = $appointment->client_name;
             $appointmentTime = Carbon::parse($appointment->start_time)->format('h:i A');
 
             $components = [
@@ -53,8 +53,8 @@ class ReminderController extends Controller
                     'to'       => '+8801823744169',
                     'type'     => 'template',
                     'template' => [
-                        'name'     => 'Ki khobor?',
-                        'language' => ['code' => config('services.whatsapp.tpl_lang')],
+                        'name'     => 'appointment_reminder',
+                        'language' => ['code' => 'it'],
                         'components' => $components,
                     ],
                 ];

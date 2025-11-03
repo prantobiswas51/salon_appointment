@@ -33,7 +33,9 @@ class SendWhatsAppMessage extends Command
                 ->orderBy('id')
                 ->chunkById(200, function ($appointments) use ($dryRun, $label) {
                     foreach ($appointments as $appointment) {
-                        $to   = trim($appointment->client_phone);
+                        $to   = $appointment->client_phone;
+
+                        dd( $to );
                         $name = $appointment->client_name ?: 'Customer';
 
                         if (empty($to)) {
@@ -41,7 +43,7 @@ class SendWhatsAppMessage extends Command
                         }
 
                         $time = $appointment->start_time
-                            ? Carbon::parse($appointment->start_time)->timezone('Asia/Dhaka')->format('h:i A')
+                            ? Carbon::parse($appointment->start_time)->timezone('Europe/Rome')->format('h:i A')
                             : null;
 
                         // Fetch WhatsApp message template
