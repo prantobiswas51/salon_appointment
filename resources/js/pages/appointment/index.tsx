@@ -231,7 +231,7 @@ export default function Index() {
               <button
                 type="button"
                 onClick={() => setShowFilters(!showFilters)}
-                className="border flex justify-center items-center rounded-lg p-3 bg-gray-100 hover:bg-gray-200 transition-colors"
+                className="border flex justify-center items-center rounded-lg p-3 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 transition-colors"
               >
                 <Filter className="mr-1" size={16} />
                 <span>Filters</span>
@@ -583,7 +583,7 @@ export default function Index() {
 
                 <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
-                    <div className="font-medium text-gray-700 ">Client Name</div>
+                    <div className="font-medium">Client Name</div>
 
                     <div className="mt-1">
                       <input
@@ -599,7 +599,7 @@ export default function Index() {
 
                   </div>
                   <div>
-                    <div className="font-medium text-gray-700">Phone</div>
+                    <div className="font-medium">Phone</div>
                     <div className="mt-1">
                       <input
                         type="text" // should be text, not number
